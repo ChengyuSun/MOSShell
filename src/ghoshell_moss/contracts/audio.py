@@ -6,24 +6,33 @@ Transport isolates audio core from Matrix/Zenoh, keeping contracts layer depende
 """
 import logging
 from abc import ABC, abstractmethod
-from typing import Callable
+from enum import Enum
+from typing import Callable, Protocol
 
 import numpy as np
 from pydantic import BaseModel, Field
 
 from ghoshell_moss.contracts.configs import ConfigType
+from ghoshell_moss.contracts.speech import SpeechTopic
+from ghoshell_moss.core.blueprint.mindflow import Priority, SignalMeta
 from ghoshell_moss.core.blueprint.session import StreamSubscriber
-from ghoshell_moss.core.concepts.topic import TOPIC_MODEL, TopicModel, TopicWindow
+from ghoshell_moss.core.concepts.topic import TOPIC_MODEL, TopicModel, TopicService, TopicWindow
 
 __all__ = [
-    "AudioFrameMeta",
-    "AudioChunk",
+    "AudioAction",
     "AudioCaptureConfig",
-    "AudioRuntimeInfo",
     "AudioCaptureSource",
+    "AudioChunk",
+    "AudioFrameMeta",
     "AudioPullLatest",
+    "AudioRuntimeReporter",
+    "AudioRuntimeTopic",
     "AudioSequentialConsumer",
+    "AudioSignal",
     "AudioTransport",
+    "Preemptable",
+    "SpeechEventEmitter",
+    "SpeechEventReceiver",
 ]
 
 
@@ -60,8 +69,13 @@ class AudioCaptureConfig(ConfigType):
         return "audio_capture"
 
 
-class AudioRuntimeInfo(BaseModel):
-    """Runtime discovery — where the stream lives and whether it's alive."""
+class AudioRuntimeTopic(TopicModel):
+    """Audio capture runtime state broadcast via TopicWindow (max_size=1).
+
+    Replaces the old tmp_storage one-shot write with a continuously
+    updatable topic — consumers get heartbeat, running state, and stream
+    location without polling the filesystem.
+    """
 
     running: bool = False
     stream_key: str = ""
@@ -69,6 +83,14 @@ class AudioRuntimeInfo(BaseModel):
     device_explain: str = ""
     started_at: float = 0.0
     last_heartbeat: float = 0.0
+
+    @classmethod
+    def topic_type(cls) -> str:
+        return "audio/runtime"
+
+    @classmethod
+    def default_topic_name(cls) -> str:
+        return "audio/runtime"
 
 
 class AudioCaptureSource(ABC):
@@ -170,3 +192,70 @@ class AudioTransport(ABC):
     def logger(self) -> logging.Logger:
         """Logger for audio capture diagnostics."""
         ...
+
+
+# ── AudioSignal — mindflow integration ──────────────────────────
+
+
+class AudioAction(str, Enum):
+    SPEECH_STARTED = "speech_started"
+    SPEECH_DELTA = "speech_delta"
+    SPEECH_FINAL = "speech_final"
+    WAKE_WORD = "wake_word"
+    AUDIO_ALERT = "audio_alert"
+
+
+class AudioSignal(SignalMeta):
+    """Audio perception signal — listener → mindflow attention preemption.
+
+    Streaming ASR emits SPEECH_DELTA with complete=False on first result
+    to challenge current attention, then SPEECH_FINAL with complete=True
+    to release the attention slot and let the Ghost process the utterance.
+    """
+
+    action: AudioAction
+    speech_topic: SpeechTopic | None = None
+
+    @classmethod
+    def signal_name(cls) -> str:
+        return "audio"
+
+    @classmethod
+    def priority(cls) -> Priority:
+        return Priority.WARNING
+
+
+# ── Optional capability protocols ───────────────────────────────
+
+
+class Preemptable(Protocol):
+    """Component can be interrupted by attention preemption.
+
+    TTS/Speech/Player optionally implement this. When mindflow's attention
+    challenge returns preempt, attenuate() is called on the current action's
+    associated component. resume() is called when the preempting impulse
+    completes.
+    """
+
+    def attenuate(self) -> None: ...
+
+    def resume(self) -> None: ...
+
+
+class SpeechEventEmitter(Protocol):
+    """Component can broadcast SpeechTopic events. Listener/ASR implement."""
+
+    @property
+    def topic_service(self) -> TopicService: ...
+
+
+class SpeechEventReceiver(Protocol):
+    """Component can receive SpeechTopic events. Context/subtitle/memory implement."""
+
+    def on_speech_topic(self, topic: SpeechTopic) -> None: ...
+
+
+class AudioRuntimeReporter(Protocol):
+    """Component can report runtime state. Capture/Player implement."""
+
+    def runtime_info(self) -> AudioRuntimeTopic: ...

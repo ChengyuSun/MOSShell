@@ -5,7 +5,7 @@ description: 完整音频感知管线 — miniaudio PCM 捕获 → Zenoh 流 →
 milestone: null
 priority: P1
 status: in-progress
-status_note: Step 1-7 完成。KD10 Matrix 解耦已落地：AudioTransport ABC + MatrixAudioTransport 适配器 + 改造 MiniAudioCaptureSource。下一步：新合约定义 (KD12/KD13) 或 .design 文档。
+status_note: Step 1-10 完成。合约层全部落地：SpeechTopic (speech.py)、AudioSignal + AudioAction + 4 Protocols + AudioRuntimeTopic (audio.py)、MiniAudioCaptureSource 改用 AudioRuntimeTopic 广播。下一步：.design 文档 或 Listener MVP (Step 11)。
 title: Audio Capture — 音频感知全链路
 updated: '2026-06-07'
 ---
@@ -711,9 +711,9 @@ class SpeechTopic(TopicModel):
 | 5 | Audio Capture App — 独立生命周期 | **done** | 2026-06-05 |
 | 6 | `AudioTransport` ABC + `MatrixAudioTransport` 适配器 | **done** | 2026-06-07 |
 | 7 | `MiniAudioCaptureSource` Matrix → AudioTransport 改造 | **done** | 2026-06-07 |
-| 8 | `AudioRuntimeTopic` + TopicWindow 替代 tmp_storage | **pending** — 见 KD11 | |
-| 9 | `SpeechTopic` 合约 + contracts/speech.py 补充 | **pending** — 见 KD12 | |
-| 10 | `AudioSignal` + 四个 Protocol 合约 | **pending** — 见 KD13/KD14 | |
+| 8 | `AudioRuntimeTopic` + TopicWindow 替代 tmp_storage | **done** | 2026-06-07 |
+| 9 | `SpeechTopic` 合约 + contracts/speech.py 补充 | **done** | 2026-06-07 |
+| 10 | `AudioSignal` + 四个 Protocol 合约 | **done** | 2026-06-07 |
 | 11 | Listener App (ASR 消费者) — SequentialConsumer + Recognizer + SpeechTopic pub + AudioSignal emit | **pending** — 见 KD9/KD12/KD13 | |
 | 12 | Mindflow AudioSignal Nucleus 注册 | **pending** — 见 KD13 | |
 | 13 | Speech/TTS `Preemptable` 实现 | **pending** — 见 KD14 | |
@@ -797,3 +797,4 @@ Ghost: apps:stop sensors/audio_capture
 *Bug 修复: int16 归一化 + 波形渲染宽 bar — Claude Opus 4.7 与人类工程师, 2026-06-05*
 *设计收敛: Matrix 解耦 AudioTransport、TopicWindow 替代 tmp_storage、SpeechTopic 统一协议、AudioSignal 接入 mindflow、五种交互模式、四项可选 Protocol、MVP 边界收敛 — deepseek-v4 与人类工程师, 2026-06-07*
 *实现: KD10 Matrix 解耦 — AudioTransport ABC (contracts)、MatrixAudioTransport 适配器 (host)、MiniAudioCaptureSource 改造、Provider 更新、App 更新、单测覆盖 — deepseek-v4-pro 与人类工程师, 2026-06-07*
+*实现: KD11/KD12/KD13/KD14 合约落地 — SpeechTopic 统一语音事件、AudioSignal 音频感知信号、AudioAction 枚举、Preemptable/SpeechEventEmitter/SpeechEventReceiver/AudioRuntimeReporter 四项 Protocol、AudioRuntimeTopic 替代 tmp_storage、MiniAudioCaptureSource 改用 AudioRuntimeTopic 广播 — deepseek-v4-pro 与人类工程师, 2026-06-07*

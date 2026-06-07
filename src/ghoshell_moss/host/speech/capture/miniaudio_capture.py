@@ -16,6 +16,7 @@ from ghoshell_moss.contracts.audio import (
     AudioChunk,
     AudioFrameMeta,
     AudioPullLatest,
+    AudioRuntimeTopic,
     AudioSequentialConsumer,
     AudioTransport,
 )
@@ -132,8 +133,15 @@ class MiniAudioCaptureSource(AudioCaptureSource):
         next(gen)
         self._capture.start(gen)
 
-        # TODO KD11: replace with AudioRuntimeTopic pub via transport.pub_topic()
         self._started = True
+        self._transport.pub_topic(AudioRuntimeTopic(
+            running=True,
+            stream_key=_STREAM_KEY,
+            device_name=getattr(self._capture, "name", "") or "default",
+            device_explain=self.device_explain(),
+            started_at=time.time(),
+            last_heartbeat=time.time(),
+        ))
         self._logger.info("Audio capture started (key=%s, device=%s)",
                           _STREAM_KEY, self.device_explain())
 
@@ -153,6 +161,11 @@ class MiniAudioCaptureSource(AudioCaptureSource):
             self._capture.close()
             self._capture = None
 
+        self._transport.pub_topic(AudioRuntimeTopic(
+            running=False,
+            stream_key=_STREAM_KEY,
+            last_heartbeat=time.time(),
+        ))
         self._transport.release_lock()
         self._started = False
         self._logger.info("Audio capture closed")
