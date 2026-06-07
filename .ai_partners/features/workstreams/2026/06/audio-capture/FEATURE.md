@@ -5,7 +5,7 @@ description: 完整音频感知管线 — miniaudio PCM 捕获 → Zenoh 流 →
 milestone: null
 priority: P1
 status: in-progress
-status_note: Step 1-5 完成。本轮会话完成设计收敛与 Matrix 解耦方向锚定。移交后续伙伴完成 .design 文档与任务拆分。
+status_note: Step 1-7 完成。KD10 Matrix 解耦已落地：AudioTransport ABC + MatrixAudioTransport 适配器 + 改造 MiniAudioCaptureSource。下一步：新合约定义 (KD12/KD13) 或 .design 文档。
 title: Audio Capture — 音频感知全链路
 updated: '2026-06-07'
 ---
@@ -16,9 +16,10 @@ updated: '2026-06-07'
 > 系统音频 → miniaudio → PCM → Zenoh → 消费者（波形/ASR）→ SpeechTopic 广播
 > → AudioSignal → mindflow 注意力抢占。
 >
-> 本轮会话（2026-06-07）完成设计收敛：Matrix 解耦方向、TopicWindow 替代 tmp_storage、
+> 2026-06-07 首轮：设计收敛 — Matrix 解耦方向、TopicWindow 替代 tmp_storage、
 > SpeechTopic 统一语音协议、AudioSignal 接入 mindflow、五种交互模式定义。
-> 移交后续伙伴完成 .design 文档与任务拆分。
+> 2026-06-07 次轮：KD10 Matrix 解耦落地 — AudioTransport ABC + MatrixAudioTransport
+> 适配器 + MiniAudioCaptureSource 改造，合约层零 Matrix import。
 
 ## Motivation
 
@@ -708,8 +709,8 @@ class SpeechTopic(TopicModel):
 | 3 | `audio_capture_provider.py` — Provider + manifests | **done** (需改为组装 Transport) | 2026-06-05 |
 | 4 | Waveform App — 跨进程可视化消费者 | **done** | 2026-06-05 |
 | 5 | Audio Capture App — 独立生命周期 | **done** | 2026-06-05 |
-| 6 | `AudioTransport` ABC + `MatrixAudioTransport` 适配器 | **pending** — 见 KD10 | |
-| 7 | `MiniAudioCaptureSource` Matrix → AudioTransport 改造 | **pending** | |
+| 6 | `AudioTransport` ABC + `MatrixAudioTransport` 适配器 | **done** | 2026-06-07 |
+| 7 | `MiniAudioCaptureSource` Matrix → AudioTransport 改造 | **done** | 2026-06-07 |
 | 8 | `AudioRuntimeTopic` + TopicWindow 替代 tmp_storage | **pending** — 见 KD11 | |
 | 9 | `SpeechTopic` 合约 + contracts/speech.py 补充 | **pending** — 见 KD12 | |
 | 10 | `AudioSignal` + 四个 Protocol 合约 | **pending** — 见 KD13/KD14 | |
@@ -795,3 +796,4 @@ Ghost: apps:stop sensors/audio_capture
 *实现: Step 1-2 contracts + miniaudio capture core — Claude Opus 4.7 与人类工程师, 2026-06-05*
 *Bug 修复: int16 归一化 + 波形渲染宽 bar — Claude Opus 4.7 与人类工程师, 2026-06-05*
 *设计收敛: Matrix 解耦 AudioTransport、TopicWindow 替代 tmp_storage、SpeechTopic 统一协议、AudioSignal 接入 mindflow、五种交互模式、四项可选 Protocol、MVP 边界收敛 — deepseek-v4 与人类工程师, 2026-06-07*
+*实现: KD10 Matrix 解耦 — AudioTransport ABC (contracts)、MatrixAudioTransport 适配器 (host)、MiniAudioCaptureSource 改造、Provider 更新、App 更新、单测覆盖 — deepseek-v4-pro 与人类工程师, 2026-06-07*
