@@ -618,33 +618,27 @@ class TTSSpeech(Speech, ABC):
 
 
 class SpeechTopic(TopicModel):
-    """A single utterance event in a voice conversation stream.
+    """A completed utterance in a voice conversation stream.
 
-    One SpeechTopic represents a complete or partial utterance — spoken by
-    human, ghost, assistant, or system. Streaming ASR intermediate results
-    update the same utterance (batch_id + seq unchanged) with is_delta=True.
-    The final result arrives with is_final=True. TTS emits a SpeechTopic when
-    playback begins and updates is_final=True when done.
+    Each SpeechTopic is a finished sentence segment — spoken by human, ghost,
+    assistant, or system. ASR streams intermediate results internally but only
+    publishes to this topic once segmentation completes. No delta/incremental
+    updates; every event is self-contained.
 
     A TopicWindow[SpeechTopic] over recent N utterances forms the conversation
     context window for the current voice interaction.
     """
 
     text: str = ""
-    is_delta: bool = False
-    is_final: bool = False
-
     speaker_id: str = ""
     speaker_name: str = ""
     role: str = ""
 
     batch_id: str = ""
-    seq: int = 0
     timestamp: float = 0.0
 
     lang: str = "zh"
     audio_key: str | None = None
-    commit_reason: str = ""
 
     @classmethod
     def topic_type(cls) -> str:

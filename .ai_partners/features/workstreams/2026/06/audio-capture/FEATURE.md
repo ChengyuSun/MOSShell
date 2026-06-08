@@ -372,12 +372,10 @@ window.on_change(lambda w: ...)      # 变更回调
 
 ```python
 class SpeechTopic(TopicModel):
-    """一段话语事件 — 语音对话流中的单个节点。
+    """一段完成的话语事件 — 语音对话流中的单个节点。
 
-    Topic 语义: 每一条是一个完整语段或流式中间结果。
-    流式 ASR 的中间结果更新同一个 event (batch_id + seq 不变)，
-    最终结果 is_final=True。TTS 开始播放时产生 event，完成后
-    is_final=True。
+    每条 SpeechTopic 是一个完整的断句结果。ASR 内部流式识别中间结果
+    不发送 Topic，只在断句完成后 pub 最终文本。TTS 开始播放时产生 event。
 
     TopicWindow[SpeechTopic] 承载对话上下文 — 最近 N 条话语
     构成当前语音交互的完整上下文窗口。
@@ -385,8 +383,6 @@ class SpeechTopic(TopicModel):
 
     # ── 话语内容 ──
     text: str = ""
-    is_delta: bool = False              # 流式增量；False = 完整句
-    is_final: bool = False              # 这句话说完了
 
     # ── 说话人 ──
     speaker_id: str = ""                # 唯一标识
@@ -395,13 +391,11 @@ class SpeechTopic(TopicModel):
 
     # ── 时序与追踪 ──
     batch_id: str = ""                  # 同一次语音会话的批次ID
-    seq: int = 0                        # batch 内序列号
     timestamp: float = 0.0              # 事件时间
 
     # ── 可选关联 ──
     lang: str = "zh"
     audio_key: str | None = None        # 关联的 PCM 流 key
-    commit_reason: str = ""             # vad_timeout / manual / tts_done
 
     @classmethod
     def topic_type(cls) -> str:
@@ -414,20 +408,9 @@ class SpeechTopic(TopicModel):
 
 **与现有 Recognition 的关系**:
 
-| Recognition (ASR 内部) | SpeechTopic (统一协议) |
-|---|---|
-| batch_id | batch_id |
-| seq | seq |
-| text | text |
-| sentence | is_final |
-| is_last | is_final (语义合并) |
-| created | timestamp |
-| commit_reason | commit_reason |
-| — | speaker_id, speaker_name, role, is_delta, lang, audio_key |
+`Recognition` 是 ASR 内部的领域模型，承载流式中间结果（seq、is_last、commit_reason 等）。listener 的 `on_recognition` 回调在断句完成后，将最终文本映射为一条 `SpeechTopic` 再 pub。中间增量结果不产生 SpeechTopic。
 
-`Recognition` 是 ASR 内部的领域模型。listener 的 `on_recognition` 回调拿到 `Recognition` 后，映射成 `SpeechTopic` 再 pub。
-
-**TTS 侧**: Speech 播放一句话时 pub `SpeechTopic(role="ghost", is_delta=False)`，完成后更新 `is_final=True`。
+**TTS 侧**: Speech 播放一句话时 pub `SpeechTopic(role="ghost")`。
 
 **TopicWindow 承载对话上下文**: `window.values()` 返回最近 N 条话语，构成"谁说了什么"的完整上下文窗口。消费者可以按 role/speaker_id 过滤，按 timestamp 排序。
 
@@ -462,25 +445,19 @@ class AudioSignal(SignalMeta):
         return Priority.WARNING  # 高于默认 NOTICE，确保能抢占普通思考
 ```
 
-**流式 ASR 的注意力抢占**: 利用 mindflow 已有的 `complete` 机制:
+**ASR 断句 → 注意力抢占**: ASR 内部持续流式识别，断句完成后一次性发送最终结果：
 
 ```
-ASR 第一包识别结果
-  → AudioSignal(action=SPEECH_DELTA, speech_topic=SpeechTopic(text="你好", is_delta=True))
-  → Signal(complete=False, priority=WARNING)
-  → Nucleus → Impulse(complete=False)
+ASR 断句完成
+  → AudioSignal(action=SPEECH_FINAL, speech_topic=SpeechTopic(text="你好世界"))
+  → Nucleus → Impulse
   → challenge current Attention
-      ├─ 抢占成功 → 占据注意力槽位，等待 complete=True
+      ├─ 抢占成功 → Ghost 处理用户话语
       └─ TTS 实现 Preemptable → attenuate() 被打断
-
-ASR 最终结果
-  → AudioSignal(action=SPEECH_FINAL, speech_topic=SpeechTopic(text="你好世界", is_final=True))
-  → Signal(complete=True, same id)
-  → Impulse(complete=True) → 解锁 think-act loop
   → Ghost 开始思考用户说了什么
 ```
 
-**初期实现**: 不需要特殊的"首包打断"语义——直接用 mindflow 现有的 `complete=False → 抢占 → 等待 → complete=True → 解锁` 路径。Mindflow 已有 BufferNucleus 可配置监听 `"audio"` 信号。后续可优化为专属 AudioNucleus。
+**初期实现**: 直接走 mindflow 现有路径。Mindflow 已有 BufferNucleus 可配置监听 `"audio"` 信号。中间包不产生信号——只在断句确认后一次性推送。
 
 **与 Preemptable 的协作**: listener 发射 AudioSignal 后，mindflow 的 Attention challenge 如果返回 preempt，调用当前 Action 关联组件的 `Preemptable.attenuate()`。Signal/Impulse 自身不携带回调——能力发现走 Protocol。
 
@@ -678,19 +655,15 @@ class AudioRuntimeReporter(Protocol):
 # contracts/speech.py — 追加
 
 class SpeechTopic(TopicModel):
-    """统一话语事件。见 KD12。"""
+    """统一话语事件 — 只发尾包。见 KD12。"""
     text: str = ""
-    is_delta: bool = False
-    is_final: bool = False
     speaker_id: str = ""
     speaker_name: str = ""
     role: str = ""                    # human / ghost / assistant / system
     batch_id: str = ""
-    seq: int = 0
     timestamp: float = 0.0
     lang: str = "zh"
     audio_key: str | None = None
-    commit_reason: str = ""
 
     @classmethod
     def topic_type(cls) -> str: return "speech"
@@ -785,7 +758,7 @@ Ghost: apps:stop sensors/audio_capture
 ### 设计原则提醒
 
 - **依赖方向**: contracts → ABC，host → adapter。audio 核心零 Matrix import。
-- **TOPIC 不是 DELTA**: SpeechTopic 是完整语段。流式 ASR 用 `is_delta` + `batch_id` + `seq` 追踪增量更新，不是逐 token topic。
+- **TOPIC 只发尾包**: SpeechTopic 是完成语段。流式 ASR 中间结果由 Recognition 内部持有，只在断句完成后 pub 最终文本到 Topic。
 - **Protocol 不是强制**: 组件选择实现。能力发现走 `isinstance`。回调走 Signal。
 - **MVP 收敛**: 单一交互方式 + 一条全链路跑通。其余后续。
 

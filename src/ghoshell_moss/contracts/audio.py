@@ -199,7 +199,6 @@ class AudioTransport(ABC):
 
 class AudioAction(str, Enum):
     SPEECH_STARTED = "speech_started"
-    SPEECH_DELTA = "speech_delta"
     SPEECH_FINAL = "speech_final"
     WAKE_WORD = "wake_word"
     AUDIO_ALERT = "audio_alert"
@@ -208,9 +207,9 @@ class AudioAction(str, Enum):
 class AudioSignal(SignalMeta):
     """Audio perception signal — listener → mindflow attention preemption.
 
-    Streaming ASR emits SPEECH_DELTA with complete=False on first result
-    to challenge current attention, then SPEECH_FINAL with complete=True
-    to release the attention slot and let the Ghost process the utterance.
+    ASR emits SPEECH_FINAL when a completed sentence is ready. The signal
+    carries the SpeechTopic payload and challenges the Ghost's current
+    attention via mindflow.
     """
 
     action: AudioAction
