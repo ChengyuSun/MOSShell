@@ -84,13 +84,15 @@ show_moshi 的 reflex 前端目前在 Chrome 浏览器中查看。用原生桌�
 
 **技术选型**：PySide6 + QWebEngineView。PySide6（Qt 官方维护，LGPL）与 PyQt6（Riverbank，GPL）API 99% 一致，选 PySide6 因许可证干净且社区更大。QWebEngineView 是完整 Chromium 内核，网页兼容性零问题。
 
-**事件循环分离**：Qt（主线程）与 MOSS asyncio（后台线程）各跑各的事件循环——`QApplication.exec()` 在主线程驱动窗口，`Matrix.discover().run(main)` 在 daemon 线程驱动 channel。不共享 loop，互不阻塞。QAsyncioEventLoopPolicy 方案因与 QApplication 创建时机冲突而弃用。
+**事件循环融合（2026-06-24 修订）**：Qt 和 MOSS Matrix 通过 `qasync` 共享主线程的单一 asyncio 事件循环。`QApplication` 在 `qasync.run()` 之前创建，`qasync` 通过 `QApplication.instance()` 复用并桥接到 asyncio event loop。`matrix.arun(main)` 直接 await（而非通过 `Matrix.run()` 另起事件循环），窗口关闭时 `app.aboutToQuit` → `matrix.close()` → `wait_closed()` 触发 → `main()` 返回 → 进程正常退出。最初用 `threading.Thread` 分离两套事件循环，后改为 qasync 融合；改用 `Matrix.run()` 直接调 `arun()` 避免了 `asyncio.run()` 隐式创建第二个 loop。
+
+**启动加载态（2026-06-24）**：Reflex 本地服务启动慢于窗口，窗口打开瞬间页面不可用会显示 `ERR_CONNECTION_REFUSED`。增加 `_LoadingOverlay` 组件——深色背景 + 居中文字 + 不确定进度条。启动时展示 loading 画面，`QTimer` + `QNetworkAccessManager.head()` 每秒轮询目标 URL，服务可用后自动切到 webview。loading 和 webview 通过 `QStackedWidget` 管理，webview 页面背景色与 loading 统一（`#0f0f1a`），切换时无白屏闪烁。
 
 **架构定位**：桌面窗口是纯基础设施——替代浏览器，不耦合 moshi 导演逻辑或 reflex 渲染逻辑。Ghost 仍是唯一集成点（Key Decision #1）。窗口本身可拓展（toolbar/sidebar/statusbar），当前阶段仅嵌入 QWebEngineView 加载 reflex 前端。
 
 **放置位置**：`ui/moshi` app 内，不独立成 app。理由：窗口只是 moshi channel 进程的附带 UI，不是独立服务；独立 app 增加不必要的进程边界。
 
-**关键依赖**：PySide6（~200MB，含 Qt + Chromium），仅 moshi app 的 pyproject.toml 声明，不污染主项目。
+**关键依赖**：PySide6（~200MB，含 Qt + Chromium）+ qasync（Qt/asyncio 事件循环桥接），仅 moshi app 的 pyproject.toml 声明，不污染主项目。
 
 ### 6. 布局实现模式（2026-06-23 修订）
 
@@ -408,9 +410,17 @@ Ghost 无需主动查询。章节列表写在 MODE.md 中，无需运行时查�
 
 ### 待完成
 
+<<<<<<< HEAD
 - [x] 章节剧本补 switch_state + 表演约束（全部 7 章 ✅）
 - [ ] 实现 `comparison` 布局（未来视觉增强，不阻塞——06 章已用 stage 跑通）
 - [ ] 实现 `topology` 布局（未来视觉增强，不阻塞——05 章已用 stage 跑通）
+=======
+- [ ] 章节剧本补 switch_state + 表演约束（01 ✅，02-07 待改）
+- [ ] 实现 `comparison` 布局（中低难度，左右对比表，06 Ghost 章）
+- [ ] 实现 `capability_grid` 布局（中高难度，卡片网格+树形展开，03 Channel 章）
+- [ ] 实现 `topology` 布局（最难，SVG 拓扑图，04 Matrix + 05 Mindflow 两章复用）
+- [x] **桌面壳窗口**（`ui/moshi` app 内）：pyproject.toml（PySide6 + qasync 依赖）、`src/window.py`（MoshiWindow 可拓展壳）、`main.py` 入口（qasync 桥接 Qt + asyncio，主线程单事件循环）
+>>>>>>> 4c71100 (feat: add loading overlay with health-check polling to moshi window by deepseek-v4-pro)
 - [ ] fill `bringup_apps`（MODE.md 目前只有 `ui/reflex`，需加入 `ui/moshi`、`games/ai_eye`）
 - [ ] 端到端集成测试
 
