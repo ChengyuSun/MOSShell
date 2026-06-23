@@ -3,4 +3,5 @@
 
 layouts:
   - "framework.layouts.hero.HeroLayout"
+  - "framework.layouts.course.CourseLayout"
   - "framework.layouts.stage.StageLayout"
