@@ -21,7 +21,7 @@ chapters:
     order: 2
     title: "CTML · 系统调用"
     theme: "流式系统调用，时间是第一公民"
-    suggested_layout: code_split
+    suggested_layout: stage
     duration: "~40s"
     file: "02-ctml.md"
 

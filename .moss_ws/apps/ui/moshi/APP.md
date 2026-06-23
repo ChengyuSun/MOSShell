@@ -1,6 +1,6 @@
 ---
 arguments: ''
-description: "show_moshi 导演：管理章节推进，通过 context_messages 为 Ghost 提供当前章节上下文"
+description: "show_moshi 导演：管理章节推进"
 executable: uv
 respawn: false
 script: main.py
