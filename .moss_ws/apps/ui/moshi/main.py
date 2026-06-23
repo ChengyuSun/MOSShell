@@ -6,9 +6,10 @@
 
 from ghoshell_moss.core.blueprint.matrix import Matrix
 from ghoshell_moss.core.blueprint.channel_builder import new_channel
+from ghoshell_moss.core.concepts.command import Observe
 from ghoshell_moss.message import Message
 
-from course import scan_courses, load_course, Course
+from course import scan_courses, load_course as _load_course, Course
 
 
 async def main(matrix: Matrix):
@@ -24,7 +25,6 @@ async def main(matrix: Matrix):
         name="moshi",
         description=(
             "show_moshi 导演。自动列出可用课程，加载后管理章节推进，"
-            "通过 context_messages 为 Ghost 提供当前章节上下文。"
         ),
     )
 
@@ -33,23 +33,22 @@ async def main(matrix: Matrix):
     async def context_messages() -> list[Message]:
         messages: list[Message] = []
 
-        # 始终推送可用课程列表
-        if available:
-            courses_str = "\n".join(
-                f"  {name}: {meta.title}（{meta.chapter_count}章, {meta.duration}）"
-                for name, meta in available.items()
-            )
-        else:
-            courses_str = "（无可用课程）"
-        messages.append(
-            Message.new("moshi_courses").with_content(f"【可用课程】\n{courses_str}")
-        )
-
         if not course:
+            # 初始态：仅推送可用课程列表
+            if available:
+                courses_str = "\n".join(
+                    f"  {name}: {meta.title}（{meta.chapter_count}章, {meta.duration}）"
+                    for name, meta in available.items()
+                )
+            else:
+                courses_str = "（无可用课程）"
+            messages.append(
+                Message.new("moshi_courses").with_content(f"【可用课程】\n{courses_str}")
+            )
             return messages
 
         if not current_id:
-            # _meta 层：课程概述
+            # _meta 层：课程概述 + 章节列表 + 知识背景 + 强约束推进
             chapters_summary = "\n".join(
                 f"  {course.chapters[i].order}. {course.chapters[i].title}"
                 f"（{i}, 布局 {course.chapters[i].suggested_layout}）"
@@ -61,6 +60,14 @@ async def main(matrix: Matrix):
                     f"【表演纪律】{course.performance}\n"
                     f"【章节列表】\n{chapters_summary}\n"
                     f"\n{course.knowledge}"
+                )
+            )
+            # 强约束：停在 _meta 层时，每轮都推送推进指令
+            messages.append(
+                Message.new("moshi_directive").with_content(
+                    "【指令】你现在处于课程概述层。立即调用 "
+                    "<apps.ui_moshi:next_chapter /> 进入第一章，开始表演。"
+                    "不要停留、不要解释概述内容——直接推进。"
                 )
             )
         else:
@@ -80,49 +87,60 @@ async def main(matrix: Matrix):
 
     # ── 命令 ──
     @channel.build.command()
-    async def load_course(name: str) -> str:
+    async def load_course(name: str) -> Observe:
         """加载指定课程。name 为可用课程列表中的课程名。"""
         nonlocal course, current_id
         if name not in available:
             opts = ", ".join(available.keys())
-            return f"未知课程 '{name}'。可用：{opts}"
-        course = load_course(assets_dir / name)
+            return Observe.new(f"未知课程 '{name}'。可用：{opts}")
+        course = _load_course(assets_dir / name)
         current_id = ""
         chaps = " → ".join(course.ordered_ids)
-        return (
+        return Observe.new(
             f"已加载「{course.title}」，共{len(course.ordered_ids)}章。\n"
-            f"章节路径：{chaps}\n"
-            f"现在你已看到课程概述。调用 next_chapter 开始第一章。"
+            f"章节路径：{chaps}\n\n"
+            f"现在立即调用 <apps.ui_moshi:next_chapter /> 进入第一章。"
+            f"不要停留——直接推进。"
         )
 
     @channel.build.command()
-    async def next_chapter() -> str:
+    async def next_chapter() -> Observe:
         """推进到下一章。首次调用进入第一章。"""
         nonlocal current_id
         if not course:
-            return "尚未加载课程。请先 load_course。"
+            return Observe.new("尚未加载课程。请先 load_course。")
         if not current_id:
             current_id = course.ordered_ids[0]
         else:
             idx = course.ordered_ids.index(current_id)
             if idx + 1 >= len(course.ordered_ids):
-                return "已是最后一章。"
+                return Observe.new("已是最后一章。收束表演，准备谢幕。")
             current_id = course.ordered_ids[idx + 1]
         chap = course.chapters[current_id]
-        return f"第{chap.order}章「{chap.title}」（布局 {chap.suggested_layout}）"
+        # 章节上下文已在 context_messages 中推送，
+        # Observe 信号确保 Ghost 感知章节切换事件
+        return Observe.new(
+            f"进入第{chap.order}章「{chap.title}」\n"
+            f"布局：{chap.suggested_layout} | 时长：{chap.duration}\n"
+            f"立即按剧本开始表演。"
+        )
 
     @channel.build.command()
-    async def jump_chapter(id: str) -> str:
+    async def jump_chapter(id: str) -> Observe:
         """跳转到指定章节。id 为章节标识符。"""
         nonlocal current_id
         if not course:
-            return "尚未加载课程。请先 load_course。"
+            return Observe.new("尚未加载课程。请先 load_course。")
         if id not in course.chapters:
             opts = ", ".join(course.ordered_ids)
-            return f"未知章节 '{id}'。可用：{opts}"
+            return Observe.new(f"未知章节 '{id}'。可用：{opts}")
         current_id = id
         chap = course.chapters[id]
-        return f"第{chap.order}章「{chap.title}」（布局 {chap.suggested_layout}）"
+        return Observe.new(
+            f"跳转到第{chap.order}章「{chap.title}」\n"
+            f"布局：{chap.suggested_layout} | 时长：{chap.duration}\n"
+            f"立即按剧本开始表演。"
+        )
 
     await matrix.provide_channel(channel)
 

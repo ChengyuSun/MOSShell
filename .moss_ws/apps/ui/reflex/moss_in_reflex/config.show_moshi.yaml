@@ -1,0 +1,6 @@
+# show_moshi mode 布局配置
+# 仅注册 Moshi 七幕演示所需的布局，减少 Ghost 命令选择空间
+
+layouts:
+  - "framework.layouts.hero.HeroLayout"
+  - "framework.layouts.stage.StageLayout"

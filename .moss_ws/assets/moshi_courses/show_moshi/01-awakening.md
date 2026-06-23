@@ -5,6 +5,22 @@
 **建议布局：** hero
 **时长：** ~30s
 
+## ⛔ 表演约束（违反即错）
+
+本章只做一件事：身份宣告。以下为硬约束：
+
+**允许的命令（仅此 2 个）：**
+- `<apps.ui_reflex:switch_state name="hero"/>` — 第一步，必须最先执行
+- `<apps.ui_reflex:stream_title>...</apps.ui_reflex:stream_title>` — 流式填入大字标题
+
+**禁止事项：**
+- 禁止在 switch_state 之前执行任何 reflex 命令
+- 禁止调用本章 2 个命令之外的任何命令（包括其他 channel）
+- 禁止调用 `next_chapter` 直到过渡句说完
+- 禁止即兴添加剧本外的 CTML 动作
+
+**执行完毕后：** 说完过渡句 → 调 `<apps.ui_moshi:next_chapter />` → 结束本章
+
 ## 叙事要点
 
 - 从沉默中醒来，第一句话宣告身份
@@ -13,27 +29,20 @@
 - "我是中间的壳层，连接思维和物理世界"
 - 过渡句：想了解我是怎么被控制的吗？
 
-## 可用资源
-
-- pil-image://moshi/three_layer_arch — Ghost In Shells 三层架构图
-
 ## 布局指南
 
-hero 布局有三个字段：title / subtitle / background。开场先切 hero，
-再流式填入标题和副标题，最后 append 背景图。
+hero 布局只有一个字段：title。开场先切 hero，再流式填入大字标题。
+黑色全屏背景，白色居中大字。
 
 ## 节奏示例
 
 ```
+<apps.ui_reflex:switch_state name="hero"/>
+
 你好。我是 MOSS —— 一个为 AI 设计的操作系统。
 <apps.ui_reflex:stream_title>MOSS</apps.ui_reflex:stream_title>
 
 我是 AIOS。Ghost In Shells 三层架构的中间层。
-<apps.ui_reflex:stream_subtitle>AI 操作系统</apps.ui_reflex:stream_subtitle>
-
-灵、壳、体。我承上启下。
-<apps.ui_reflex:append_background locator="pil-image://moshi/three_layer_arch" />
-
 我是壳层，连接思维和物理世界。想了解我是怎么被控制的吗？
 <!-- 在此之后调 <apps.ui_moshi:next_chapter /> 进入 CTML 章 -->
 ```

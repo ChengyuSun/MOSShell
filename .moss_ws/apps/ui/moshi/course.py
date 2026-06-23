@@ -86,7 +86,7 @@ def load_course(course_dir: Path) -> Course:
     chapters: dict[str, Chapter] = {}
     for ch_data in fm.get("chapters", []):
         ch_file = course_dir / ch_data["file"]
-        _, content = _split_frontmatter(ch_file.read_text())
+        content = ch_file.read_text()
         chapters[ch_data["id"]] = Chapter(
             id=ch_data["id"],
             order=ch_data["order"],
