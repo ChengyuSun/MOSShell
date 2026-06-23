@@ -73,72 +73,24 @@ Moshi 是 show_moshi 模式的导演。管理章节状态，为 Ghost 提供上�
 
 ---
 
-## 章节结构（草案）
+## 章节数据
 
-```yaml
-chapters:
-  - id: awakening
-    title: "觉醒"
-    theme: "三层架构 · 灵壳一体"
-    mood: "从静止到活跃，粒子汇聚"
-    suggested_layout: hero
-    resources:
-      - pil-image://demo/three_layer_arch
-      - pil-image://demo/logo
-    duration_hint: "~30s"
+章节数据存储在 `.moss_ws/assets/moshi_courses/`，与 moshi app 代码解耦：
 
-  - id: ctml
-    title: "CTML · 系统调用"
-    theme: "流式系统调用，时间是第一公民"
-    mood: "代码感、终端感、实时解析"
-    suggested_layout: code_split
-    resources:
-      - pil-image://demo/ctml_flow
-    duration_hint: "~40s"
-
-  - id: channel
-    title: "Channel · 设备驱动"
-    theme: "能力树 + 热插拔"
-    mood: "能力卡片逐个点亮，树形展开"
-    suggested_layout: capability_grid
-    resources:
-      - pil-image://demo/channel_tree
-    duration_hint: "~60s"
-
-  - id: matrix
-    title: "Matrix · 系统总线"
-    theme: "跨进程通信拓扑"
-    mood: "节点汇聚，连线脉冲"
-    suggested_layout: topology
-    resources:
-      - pil-image://demo/matrix_topo
-    duration_hint: "~30s"
-
-  - id: mindflow
-    title: "Mindflow · 调度器"
-    theme: "感知/思考/执行三循环并发"
-    mood: "三个轨道旋转，意识流可视化"
-    suggested_layout: topology
-    resources: []
-    duration_hint: "~40s"
-
-  - id: ghost
-    title: "Ghost · 智能进程"
-    theme: "传统 OS vs AIOS"
-    mood: "对比呈现，数据说话"
-    suggested_layout: comparison
-    resources: []
-    duration_hint: "~30s"
-
-  - id: finale
-    title: "尾声"
-    theme: "AIOS 时代"
-    mood: "收束，留白"
-    suggested_layout: hero
-    resources:
-      - pil-image://demo/logo
-    duration_hint: "~20s"
 ```
+.moss_ws/assets/moshi_courses/
+├── _meta.md             ← frontmatter 章节索引 + body 知识背景
+├── 01-awakening.md
+├── 02-ctml.md
+├── 03-channel.md
+├── 04-matrix.md
+├── 05-mindflow.md
+├── 06-ghost.md
+└── 07-finale.md
+```
+
+**MODE.md** 只保留 Ghost 身份 + 表演纪律 + moshi 协议（~70行）。
+章节结构和细则由 moshi 从 assets 目录加载，通过 `get_context()` 暴露给 Ghost。
 
 ---
 
