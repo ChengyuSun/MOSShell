@@ -2,14 +2,22 @@
 
 启动时扫描 assets/moshi_courses/ 下的可用课程，通过 context_messages
 自动推送给 Ghost。Ghost 渐进式进入：先读 _meta 全局视野 → 再逐章推进。
+
+启动时附带原生桌面壳窗口（PySide6 + QWebEngineView），内嵌 reflex 前端，
+替代浏览器。Qt 和 MOSS Matrix 通过 qasync 共享主线程的单一 asyncio 事件循环。
 """
 
+import sys
+
+import qasync
+from PySide6.QtWidgets import QApplication
 from ghoshell_moss.core.blueprint.matrix import Matrix
 from ghoshell_moss.core.blueprint.channel_builder import new_channel
 from ghoshell_moss.core.concepts.command import Observe
 from ghoshell_moss.message import Message
 
 from course import scan_courses, load_course as _load_course, Course
+from src.window import MoshiWindow
 
 
 async def main(matrix: Matrix):
@@ -144,6 +152,21 @@ async def main(matrix: Matrix):
 
     await matrix.provide_channel(channel)
 
+    # 保持 channel 存活，直到 Matrix 关闭
+    await matrix.wait_closed()
+
+
+async def _run():
+    app = QApplication.instance()
+    window = MoshiWindow()
+    window.show()
+
+    matrix = Matrix.discover()
+    app.aboutToQuit.connect(matrix.close)
+
+    await matrix.arun(main)
+
 
 if __name__ == "__main__":
-    Matrix.discover().run(main)
+    _ = QApplication(sys.argv)  # qasync 通过 QApplication.instance() 复用
+    qasync.run(_run())

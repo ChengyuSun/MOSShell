@@ -35,6 +35,8 @@ MOSS 的五层架构（CTML / Channel / Matrix / Mindflow / Ghost）需要一种
 - 设计文档：本文件（FEATURE.md）——DESIGN.md 已废弃，以此为准
 - 章节资产：`.moss_ws/assets/moshi_courses/`
 - Ghost 表演指令：`.moss_ws/src/MOSS/modes/show_moshi/MODE.md`
+- Moshi App 代码：`.moss_ws/apps/ui/moshi/main.py`、`course.py`、`src/window.py`
+- Moshi App 依赖：`.moss_ws/apps/ui/moshi/pyproject.toml`
 - Reflex 布局代码：`.moss_ws/apps/ui/reflex/framework/layouts/`
 - Reflex 事件系统：`.moss_ws/apps/ui/reflex/framework/events.py`
 - 命令生成器：`.moss_ws/apps/ui/reflex/framework/runtime/event_generator.py`
@@ -75,6 +77,20 @@ MODE.md 只保留 Ghost 身份 + 表演纪律 + moshi 协议（~70 行），不�
 ### 5. 流式渲染节奏：一句一动
 
 保持 show mode 的"一句一动"节奏：Ghost 输出一句话 → 紧跟一个 CTML 动作 → 页面即时渲染反馈。Moshi 不介入表演节奏，只在章节边界提供上下文。
+
+### 7. 桌面壳窗口（2026-06-23）
+
+show_moshi 的 reflex 前端目前在 Chrome 浏览器中查看。用原生桌面窗口替代：
+
+**技术选型**：PySide6 + QWebEngineView。PySide6（Qt 官方维护，LGPL）与 PyQt6（Riverbank，GPL）API 99% 一致，选 PySide6 因许可证干净且社区更大。QWebEngineView 是完整 Chromium 内核，网页兼容性零问题。
+
+**事件循环分离**：Qt（主线程）与 MOSS asyncio（后台线程）各跑各的事件循环——`QApplication.exec()` 在主线程驱动窗口，`Matrix.discover().run(main)` 在 daemon 线程驱动 channel。不共享 loop，互不阻塞。QAsyncioEventLoopPolicy 方案因与 QApplication 创建时机冲突而弃用。
+
+**架构定位**：桌面窗口是纯基础设施——替代浏览器，不耦合 moshi 导演逻辑或 reflex 渲染逻辑。Ghost 仍是唯一集成点（Key Decision #1）。窗口本身可拓展（toolbar/sidebar/statusbar），当前阶段仅嵌入 QWebEngineView 加载 reflex 前端。
+
+**放置位置**：`ui/moshi` app 内，不独立成 app。理由：窗口只是 moshi channel 进程的附带 UI，不是独立服务；独立 app 增加不必要的进程边界。
+
+**关键依赖**：PySide6（~200MB，含 Qt + Chromium），仅 moshi app 的 pyproject.toml 声明，不污染主项目。
 
 ### 6. 布局实现模式（2026-06-23 修订）
 
@@ -362,6 +378,7 @@ Ghost 无需主动查询。章节列表写在 MODE.md 中，无需运行时查�
 - [ ] 实现 `comparison` 布局（中低难度，左右对比表，06 Ghost 章）
 - [ ] 实现 `capability_grid` 布局（中高难度，卡片网格+树形展开，03 Channel 章）
 - [ ] 实现 `topology` 布局（最难，SVG 拓扑图，04 Matrix + 05 Mindflow 两章复用）
+- [ ] **桌面壳窗口**（`ui/moshi` app 内）：pyproject.toml（PySide6 依赖）、`src/window.py`（MoshiWindow 可拓展壳）、`main.py` 入口集成 QAsyncioEventLoopPolicy + 窗口启动
 - [ ] fill `bringup_apps`（MODE.md 目前只有 `ui/reflex`，需加入 `ui/moshi`、`games/ai_eye`）
 - [ ] 端到端集成测试
 
