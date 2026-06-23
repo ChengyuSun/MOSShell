@@ -3,7 +3,7 @@ title: Moshi — show_moshi 模式导演与演示布局体系
 status: in-progress
 priority: P1
 created: 2026-06-23
-updated: 2026-06-23
+updated: 2026-06-23T19:30
 depends: []
 milestone:
 description: >-
@@ -32,7 +32,7 @@ MOSS 的五层架构（CTML / Channel / Matrix / Mindflow / Ghost）需要一种
 
 ## Design Index
 
-- 设计文档：`.moss_ws/apps/ui/moshi/DESIGN.md`
+- 设计文档：本文件（FEATURE.md）——DESIGN.md 已废弃，以此为准
 - 章节资产：`.moss_ws/assets/moshi_courses/`
 - Ghost 表演指令：`.moss_ws/src/MOSS/modes/show_moshi/MODE.md`
 - Reflex 布局代码：`.moss_ws/apps/ui/reflex/framework/layouts/`
@@ -103,25 +103,28 @@ MODE.md 只保留 Ghost 身份 + 表演纪律 + moshi 协议（~70 行），不�
 ## moshi App 职责
 
 ### 做
-- 管理章节状态（当前第几章）
-- 提供章节上下文（主题、可用资源列表、建议布局）
-- 章节推进（next / jump / list）
-- 资源按章节归属登记
+- 管理章节状态（当前第几章），通过闭包 `nonlocal` 维护
+- 提供章节上下文（主题、可用资源列表、建议布局），通过 `context_messages` 被动推送
+- 章节推进（next_chapter / jump_chapter）
+- 启动时扫描 `assets/moshi_courses/` 自动列出可用课程
+- 渐进式披露：课程列表 → _meta 概述 → 逐章进入
 
 ### 不做
 - 不直接切换 reflex 布局
 - 不直接过滤 reflex 的 context_messages
 - 不感知 reflex 的存在
 - 不干预 Ghost 的表演决策
+- 不写死路径：通过 `matrix.workspace.assets()` 解析资产目录
 
 ### 暴露给 Ghost 的命令
 
 ```
-<apps.ui_moshi:get_context />     → 返回当前章节上下文
 <apps.ui_moshi:next_chapter />    → 推进到下一章
 <apps.ui_moshi:jump_chapter id /> → 跳转到指定章节
-<apps.ui_moshi:list_chapters />   → 列出全部章节
 ```
+
+章节状态（当前第几章、主题、可用资源、建议布局）通过 `context_messages` 被动推送，
+Ghost 无需主动查询。章节列表写在 MODE.md 中，无需运行时查询命令。
 
 ---
 
@@ -130,21 +133,26 @@ MODE.md 只保留 Ghost 身份 + 表演纪律 + moshi 协议（~70 行），不�
 ### 已完成
 
 - [x] hero 布局（`framework/layouts/hero.py`，全屏开场，背景图 + 标题/副标题）
-- [x] 7 章内容资产（`assets/moshi_courses/`，含 `_meta.md` YAML 索引 + 7 个章节 md）
+- [x] 7 章内容资产（`assets/moshi_courses/show_moshi/`，含 `_meta.md` YAML 索引 + 7 个章节 md）
 - [x] MODE.md（Ghost 身份 + 表演纪律 + moshi 协议）
 - [x] Reflex 事件系统（`events.py`：LayoutEvent / StreamEvent / SetEvent / AppendEvent / UpdateEvent / PopEvent / ClearEvent）
-- [x] 命令生成器（`event_generator.py`：365 行，按类型注解自动生成全套 CTML 命令，覆盖 str / list[str] / list[Image] / list[BaseModel] / list[dict] / BaseModel / Image 全部 7 种类型）
-- [x] Layout 快照系统（`layout_snapshot.py`：119 行，通过 Reflex get_state() 读取 ComponentState 字段值，类型感知摘要压缩，支持 JSON 持久化）
-- [x] show_moshi mode manifests（8 文件齐全：channels 导入了 AppStoreChannel + mac + mermaid + web_bookmark；nuclei 声明了 AudioNucleusMeta；configs/providers/resources/topics 继承全局；contracts 预留空文件）
+- [x] 命令生成器（`event_generator.py`：365 行，按类型注解自动生成全套 CTML 命令）
+- [x] Layout 快照系统（`layout_snapshot.py`：119 行，通过 Reflex get_state() 读取 ComponentState 字段值）
+- [x] show_moshi mode manifests（8 文件齐全）
+- [x] **moshi channel 逻辑**（`main.py` + `course.py`）：
+  - 路径解析：`matrix.workspace.assets().abspath() / "moshi_courses"`，不写死相对路径
+  - `course.py`：纯数据结构（Chapter / CourseMeta / Course）+ scan_courses / load_course
+  - `main.py`：channel 主流程，context_messages + 3 命令（load_course / next_chapter / jump_chapter）
+  - 渐进式披露：自动推送课程列表 → load_course 进入 _meta 层（课程概述+知识背景）→ next_chapter 逐章进入
+  - 章节状态使用闭包 `nonlocal` 管理，无需分布式状态
 
 ### 待完成
 
-- [ ] 实现 moshi channel 逻辑（`main.py`）：章节状态管理 + `get_context` / `next_chapter` / `jump_chapter` / `list_chapters` 四个命令
+- [ ] 创建 `config.show_moshi.yaml`（注册全部 5 个布局到 show_moshi mode）
 - [ ] 实现 `comparison` 布局
 - [ ] 实现 `code_split` 布局
 - [ ] 实现 `capability_grid` 布局
 - [ ] 实现 `topology` 布局（Matrix + Mindflow 两章复用）
-- [ ] 创建 `config.show_moshi.yaml`（注册全部 5 个布局到 show_moshi mode）
 - [ ] 端到端集成测试
 
 ### 跨布局共同难点
