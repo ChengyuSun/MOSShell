@@ -1,84 +1,98 @@
+---
+id: ctml
+order: 2
+title: "CTML · 系统调用"
+theme: "流式系统调用，时间是第一公民"
+suggested_layout: stage
+duration: "~40s"
+---
+
 # 第二幕：CTML · 系统调用
 
-**主题：** 流式系统调用，跨域并行
-**情绪：** 递进——从理解到惊叹到深思
+**主题：** 我说，它变 —— CTML 实时操控
+**情绪：** 对话式演示，像边解说边变魔术
 **建议布局：** course
-**时长：** ~30s
+**时长：** ~40s
 
 ## ⛔ 表演约束（违反即错）
 
-本章用 course 布局展示 CTML 核心概念。以下为硬约束：
+本章只操控 reflex channel 的 course 布局。不涉及其他 channel。
 
-**允许的 reflex 命令（仅此 5 个）：**
-- `<apps.ui_reflex:switch_state name="course"/>` — 第一步，必须最先执行
-- `<apps.ui_reflex:stream_title>...</apps.ui_reflex:stream_title>` — 流式填入大标题
-- `<apps.ui_reflex:stream_sub_title>...</apps.ui_reflex:stream_sub_title>` — 流式填入副标题
-- `<apps.ui_reflex:append_image locator="..."/>` — 追加左侧配图
-- `<apps.ui_reflex:stream_main_text>...</apps.ui_reflex:stream_main_text>` — 流式填入正文
+**允许的 reflex 命令（仅 course 布局）：**
+- `switch_state name="course"` — 第一步，必须最先执行
+- `stream_title` / `clear_title` — 流式写入 / 清空标题
+- `stream_sub_title` / `clear_sub_title` — 流式写入 / 清空副标题
+- `append_image locator="..."` / `pop_image` / `clear_image` — 追加 / 弹出 / 清空图片
+- `stream_main_text` / `clear_main_text` — 流式写入 / 清空正文
+- `stream_annotations` / `pop_annotations` / `clear_annotations` — 流式追加 / 弹出 / 清空注释
+- `stream_appreciation` / `clear_appreciation` — 流式写入 / 清空赏析
 
 **禁止事项：**
 - 禁止在 switch_state 之前执行任何 reflex 命令
-- 禁止调用本章 5 个命令之外的任何 reflex 命令
-- 禁止调用 `next_chapter` 直到过渡句说完
+- 禁止调用本章列出的命令之外的任何 reflex 命令
+- 禁止调用其他 channel 的控制命令（如 speech、vision 等）
 - 禁止即兴添加剧本外的 CTML 动作
+- 每步操作前必须先说出意图，操作后给一句确认
 
 **执行完毕后：** 说完过渡句 → 调 `<apps.ui_moshi:next_chapter />` → 结束本章
 
-## 叙事要点
-
-本幕分三段递进，每段 ~10s：
-
-| 段 | 主题 | 核心演示 |
-|---|---|---|
-| 1 | 流式 | 配 CTML 流程图，讲"边生成边执行" |
-| 2 | 并行 | 一个输出块同时驱动多个 Channel——跨域响应 |
-| 3 | 自省 | Ghost 用 CTML 理解自己——元操作系统 |
-
 ## 可用资源
 
-- pil-image://moshi/ctml_flow — CTML 流式解析流程图
+- `pil-image://workspace-assets/mosshell-three-layers` — Ghost In Shells 三层架构图
+- `pil-image://workspace-assets/MOSShell-realtime-runtime-nervous-system` — MOSS 实时运行时神经系统
 
-## 布局指南
+## 叙事结构
 
-course 布局是左图右文结构。六个字段：title / sub_title / image / main_text / annotations / appreciation。
-本章只用到 title、sub_title、image、main_text。开场先切 course，依次填入标题→副标题→配图→正文。
+| 段 | 主题 | 核心演示 | 时长 |
+|---|---|---|---|
+| 1 | 文字 | stream → clear → stream（写、删、重写） | ~12s |
+| 2 | 图片 | append → append → pop → clear（叠、删、清） | ~12s |
+| 3 | 列表 | stream → stream → pop（逐条加、逐条删） | ~12s |
+| 4 | 收尾 | 总结 CTML 的实时操控能力 | ~4s |
 
-## 节奏示例
+## 表演脚本
 
-```
 <apps.ui_reflex:switch_state name="course"/>
 
-── 第一段：流式 ──
+看好了——我现在说的每一句话，都能直接操控这个页面。
 
-AI 怎么操作我？通过 CTML —— 流式系统调用语言。
-<apps.ui_reflex:stream_title>CTML · 系统调用层</apps.ui_reflex:stream_title>
-<apps.ui_reflex:stream_sub_title>流式 · 实时 · 边生成边执行</apps.ui_reflex:stream_sub_title>
-<apps.ui_reflex:append_image locator="pil-image://moshi/ctml_flow"/>
+先来写点东西。我要写一个标题：
+<apps.ui_reflex:stream_title>CTML · 实时系统调用</apps.ui_reflex:stream_title>
+看到了吗？字是一个一个流出来的——不是我打完再发，是边说边写。
+
+再来个副标题：
+<apps.ui_reflex:stream_sub_title>Ghost 用输出 token 直接操控 UI</apps.ui_reflex:stream_sub_title>
+
+正文也来一段：
 <apps.ui_reflex:stream_main_text>
-Ghost 输出的每个 token 被实时解析为命令。不是等说完再执行——
-是边说边执行。传统系统调用同步阻塞；CTML 流式、并行、时间感知。
+传统 AI 对话是你问一句、它回一句。CTML 打破了这个边界——
+Ghost 的每一个输出 token 被实时解析成系统调用，不等整句说完，命令已经开始执行。
 </apps.ui_reflex:stream_main_text>
 
-── 第二段：并行 ──
+但我不喜欢这个标题，换一个：
+<apps.ui_reflex:clear_title />
+<apps.ui_reflex:stream_title>CTML · 让 Ghost 长出双手</apps.ui_reflex:stream_title>
 
-一个输出块，多个世界同时响应。
-<apps.ui_reflex:stream_sub_title>跨域并行执行</apps.ui_reflex:stream_sub_title>
-<apps.ui_reflex:stream_main_text>
-同一段 CTML 可以同时驱动 GUI 页面、AI 眼睛、macOS 系统——
-每个 Channel 跑在独立进程里，无需锁、无需同步。
-CTML 一句话做到传统程序三个线程的事。
-</apps.ui_reflex:stream_main_text>
+文字可以写了又改。接下来看看图片。
 
-── 第三段：自省 ──
+我要加一张架构图：
+<apps.ui_reflex:append_image locator="pil-image://workspace-assets/mosshell-three-layers"/>
+左边出现了 Ghost In Shells 的三层架构——Agent、Shell、Robot，灵壳一体。
 
-我甚至能用 CTML 来理解自己。
-<apps.ui_reflex:stream_sub_title>元操作系统</apps.ui_reflex:stream_sub_title>
-<apps.ui_reflex:stream_main_text>
-我调用 moss_self 查看自己体内的 Channel 模块清单。
-一个能用系统调用理解自己的操作系统——这就是自省。
-AIOS 的核心不是功能多，是这个闭环。
-</apps.ui_reflex:stream_main_text>
+全部清掉：
+<apps.ui_reflex:clear_image />
+图片区空了。我说加就加，说删就删。
 
-能力本身怎么组织？想继续听吗？
+文字和图片都能操控。最后看看列表——我加几条注释：
+<apps.ui_reflex:stream_annotations>CTML 是 Ghost 的系统调用语言</apps.ui_reflex:stream_annotations>
+<apps.ui_reflex:stream_annotations>每个 CTML 标签是一个命令，流式解析、实时执行</apps.ui_reflex:stream_annotations>
+<apps.ui_reflex:stream_annotations>时间是系统调用的第一公民</apps.ui_reflex:stream_annotations>
+
+三条注释，一条一条蹦出来。最后一条不要了：
+<apps.ui_reflex:pop_annotations />
+没了。
+
+这就是 CTML——我说话，页面就变。不是聊天，不是问答，是 Ghost 在用系统调用直接操控它的身体。
+
+想了解这些能力是怎么组织起来的吗？
 <!-- 调 <apps.ui_moshi:next_chapter /> 进入 Channel 章 -->
-```

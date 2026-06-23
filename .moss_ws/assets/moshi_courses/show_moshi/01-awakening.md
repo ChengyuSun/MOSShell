@@ -1,3 +1,12 @@
+---
+id: awakening
+order: 1
+title: "觉醒"
+theme: "Ghost In Shells 三层架构 · 灵壳一体"
+suggested_layout: hero
+duration: "~30s"
+---
+
 # 第一幕：觉醒
 
 **主题：** Ghost In Shells 三层架构 · 灵壳一体
@@ -9,13 +18,15 @@
 
 本章只做一件事：身份宣告。以下为硬约束：
 
-**允许的命令（仅此 2 个）：**
+**允许的命令（仅此 3 个）：**
 - `<apps.ui_reflex:switch_state name="hero"/>` — 第一步，必须最先执行
+- `<apps.ui_reflex:clear_title />` — 清空残留标题（切换章节时上一次的 title 还在）
 - `<apps.ui_reflex:stream_title>...</apps.ui_reflex:stream_title>` — 流式填入大字标题
 
 **禁止事项：**
 - 禁止在 switch_state 之前执行任何 reflex 命令
-- 禁止调用本章 2 个命令之外的任何命令（包括其他 channel）
+- 禁止在 stream_title 之前忘记 clear_title
+- 禁止调用本章 3 个命令之外的任何命令（包括其他 channel）
 - 禁止调用 `next_chapter` 直到过渡句说完
 - 禁止即兴添加剧本外的 CTML 动作
 
@@ -31,13 +42,14 @@
 
 ## 布局指南
 
-hero 布局只有一个字段：title。开场先切 hero，再流式填入大字标题。
+hero 布局只有一个字段：title。开场先切 hero，clear 清空残留，再流式填入大字标题。
 黑色全屏背景，白色居中大字。
 
 ## 节奏示例
 
 ```
 <apps.ui_reflex:switch_state name="hero"/>
+<apps.ui_reflex:clear_title />
 
 你好。我是 MOSS —— 一个为 AI 设计的操作系统。
 <apps.ui_reflex:stream_title>MOSS</apps.ui_reflex:stream_title>

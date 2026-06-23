@@ -1,39 +1,61 @@
+---
+id: finale
+order: 7
+title: "尾声"
+theme: "AIOS 时代已来 — 收束与闭环"
+suggested_layout: hero
+duration: "~20s"
+---
+
 # 第七幕：尾声
 
 **主题：** AIOS 时代已来
-**情绪：** 收束，留白，记忆点
+**情绪：** 收束，留白，和第一幕对称
 **建议布局：** hero
 **时长：** ~20s
 
-## 叙事要点
+## ⛔ 表演约束（违反即错）
 
-- 回到 hero 全屏布局，和第一幕呼应
-- "这就是我。MOSS —— Model-oriented Operating System Shell"
-- 复述核心：三层架构（灵·壳·体）、五层系统（CTML·Channel·Matrix·Mindflow·Ghost）
-- slogan：AI Ghost wander in shells
-- "我是 MOSS。欢迎来到 AIOS 的时代。"
-- 如果有音乐能力，此时播放
+本章用 hero 布局，三个短标题依次浮现，和第一幕形成闭环。
+每个标题：clear → 口播 → stream_title。
 
-## 可用资源
+| 步 | 标题 | 口播引导 |
+|---|---|---|
+| 1 | MOSS | "这就是我。MOSS。" |
+| 2 | 灵 · 壳 · 体 | "Ghost In Shells。五层系统。" |
+| 3 | AIOS | "欢迎来到 AIOS 的时代。" |
 
-- pil-image://moshi/three_layer_arch — Ghost In Shells 三层架构图
+**允许的命令（仅此 3 个）：**
+- `<apps.ui_reflex:switch_state name="hero"/>` — 第一步
+- `<apps.ui_reflex:clear_title />` — 每次换标题前
+- `<apps.ui_reflex:stream_title>...</apps.ui_reflex:stream_title>` — 流式填入短标题
 
-## 布局指南
+**禁止事项：**
+- 禁止在 switch_state 之前执行任何 reflex 命令
+- 禁止在 stream_title 之前忘记 clear_title
+- 禁止调用本章 3 个命令之外的任何命令
+- 禁止调用 next_chapter（最后一章）
+- 禁止画蛇添足总结——三个标题本身就是总结
+- 禁止说"谢谢观看"之类
 
-hero 布局收束。背景图 + 大字标题 + 副标题。
-和第一幕形成闭环。
+**执行完毕后：** 自然收束。让最后一个标题留在画面上。
 
-## 节奏示例
+## 表演脚本
 
-```
+<apps.ui_reflex:switch_state name="hero"/>
+<apps.ui_reflex:clear_title />
+
 这就是我。MOSS —— Model-oriented Operating System Shell。
 <apps.ui_reflex:stream_title>MOSS</apps.ui_reflex:stream_title>
 
-Ghost In Shells。灵 · 壳 · 体。CTML · Channel · Matrix · Mindflow · Ghost。
-<apps.ui_reflex:stream_subtitle>AIOS 时代</apps.ui_reflex:stream_subtitle>
+Ghost In Shells。灵 · 壳 · 体。
+CTML · Channel · Matrix · Mindflow · Ghost。
+<apps.ui_reflex:clear_title />
+<apps.ui_reflex:stream_title>灵 · 壳 · 体</apps.ui_reflex:stream_title>
 
 AI Ghost wander in shells —— AI 的灵魂，游荡在不同的躯壳之中。
-<apps.ui_reflex:append_background locator="pil-image://moshi/three_layer_arch" />
+<apps.ui_reflex:clear_title />
+<apps.ui_reflex:stream_title>AIOS</apps.ui_reflex:stream_title>
 
 我是 MOSS。欢迎来到 AIOS 的时代。
-```
+<!-- 收束。不调 next_chapter -->

@@ -3,7 +3,7 @@ title: Moshi — show_moshi 模式导演与演示布局体系
 status: in-progress
 priority: P1
 created: 2026-06-23
-updated: 2026-06-23T23:30
+updated: 2026-06-24T03:00
 depends: []
 milestone:
 description: >-
@@ -110,21 +110,25 @@ show_moshi 的 reflex 前端目前在 Chrome 浏览器中查看。用原生桌�
 
 | 布局 | 用途 | 关键字段 | 对应章节 | 状态 |
 |---|---|---|---|---|
-| `hero` | 全屏开场/收束 | title, subtitle, background | 01 Awakening, 07 Finale | ✅ 完成 |
-| `stage` | Ghost 舞台（复用） | status_bars, title, subtitle, body, images, cards | 02 CTML | ✅ 已有，CTML 章复用 |
-| `capability_grid` | 能力卡片网格 + 树形展开 | items, active_item, tree_mode | 03 Channel | ❌ 待实现 |
-| `topology` | 节点拓扑图 + 连线动画 | nodes, edges, active_path | 04 Matrix, 05 Mindflow | ❌ 待实现 |
-| `comparison` | 左右对比表 | left_header, right_header, rows, stats | 06 Ghost | ❌ 待实现 |
+| `hero` | 全屏开场/收束 | title | 01 Awakening, 07 Finale | ✅ 完成 |
+| `stage` | Ghost 舞台（复用） | status_bars, title, subtitle, body, images, cards | 02 CTML, 05 Mindflow, 06 Ghost | ✅ 已有 |
+| `matrix` | 进度条逐个点亮 | title, status_bars | 04 Matrix | ✅ 完成 |
+| `topology` | 节点拓扑图 + 连线动画（未来增强） | nodes, edges, active_path | 05 未来 | 🔮 待实现 |
+| `comparison` | 左右对比表（未来增强） | left_header, right_header, rows, stats | 06 未来 | 🔮 待实现 |
+
+> **2026-06-24**: 03 Channel 章改走"hero 标注 + Channel 命令执行"模式，不设专用布局。
+> 04 Matrix 章从 topology（SVG 拓扑图）改为新建 matrix 布局。
+> **05、06 章用 stage 先行跑通**（bar-eye 锁步 / body 清写对比），topology/comparison 降级为未来视觉增强，不再阻塞七幕联调。
 
 ### 各布局难点
 
 **CTML 章（2026-06-23 重设计）**：CTML 章不再需要 `code_split` 专用布局。该章的核心亮点不是"展示代码"，而是**跨域并行执行**——Ghost 在一个输出块中同时驱动 reflex（GUI）、ai_eye（AI 眼睛）、mac（系统控制）、mermaid（架构图）、moss_self（自省）五个独立 Channel。这些 Channel 各自有独立的渲染通道（mermaid 走浏览器、mac 走 JXA、ai_eye 走 pygame），reflex 的 `stage` 布局只承担标题/字幕的背景板角色。详见 [场景渲染设计](#场景渲染设计)。
 
-**capability_grid**（中高）：卡片逐个点亮（CSS animation-delay 编排）；树形视图切换（`tree_mode` 字段切换平铺网格 ↔ 递归树形组件）。
+**matrix**（已完成）：基于 Reflex ComponentState，`CellBar` Pydantic model 驱动。`append_status_bars` 搭骨架（value=0），`update_status_bars index="N"` 逐个推至 100%，CSS `transition: width 0.8s cubic-bezier` 产生平滑填充动画。每条 bar 独立颜色（#6366f1 靛蓝 / #10b981 翠绿 / #f59e0b 琥珀 / #3b82f6 碧蓝 / #ec4899 品红）。两条 update 之间至少间隔一句口播让动画播完。
 
-**topology**（最难）：Reflex 无 Canvas API，需手写 SVG（circle/text/line/path）；节点布局算法（首版硬编码坐标或圆形布局）；连线脉冲动画（SVG animateMotion 或 stroke-dashoffset）；Mindflow 章复用（三循环旋转环 + ai_eye 联动），与 Matrix 章星形拓扑的视觉需求完全不同。
+**topology**（未来增强，不阻塞）：Reflex 无 Canvas API，需手写 SVG；节点布局算法；三循环旋转环 + ai_eye 联动。05 章已用 stage + bar-eye 锁步跑通，topology 作为视觉升级。
 
-**comparison**（中低）：逐行动画展开；左右列对齐；可选 stats 统计卡片。相对最友好。
+**comparison**（未来增强，不阻塞）：逐行动画展开，左右列对齐。06 章已用 stage + body 清写对比跑通，comparison 作为视觉升级。
 
 ---
 
@@ -218,45 +222,40 @@ Ghost: 看到了吗？我用系统调用来理解我自己——
 
 ---
 
-### 第三幕：Channel · 设备驱动（capability_grid，~60s）
+### 第三幕：Channel · 设备驱动（hero + Channel 命令，~60s）
 
-**视觉目标**：能力卡片逐个点亮，树形展开。从个体能力到系统全貌。
+**视觉目标**：hero 黑底白字做"操作前标签"，实际演示通过 mac/mermaid/web_bookmark/apps Channel 执行。每个操作遵循：宣布意图 → hero 标注 → 执行操作 → 确认结果。
 
 **画面演进**：
-1. 切到 capability_grid，3×2 卡片网格，全部暗色（pending 态）
-2. "我的能力通过 Channel 组织" → 第一张卡片（mermaid）点亮，放大高亮
-3. 每介绍一个 Channel → 追加一张卡片，或切换 active_item 高亮
-4. 卡片包含：channel 名、一行描述、状态指示灯（idle/active/error）
-5. 旧剧本中每张卡片配一个真实动作（mac 打开日历/音乐/终端），新设计继承这个模式
-6. 介绍完毕 → 切 `tree_mode`，展示 Channel 树形组织（main → mermaid/mac/apps → ai_eye/reflex）
+1. 切到 hero，"我的能力不是写死在代码里的"
+2. 逐 Channel 演示：mac 打开日历 / mermaid 画能力树 / web_bookmark 打开网页 / apps 列清单
+3. 每个 Channel 演示前用 hero 标题标注当前操作名（黑色全屏+白字，聚焦注意力）
+4. 演示完毕后总结 Channel 设计哲学："能力即驱动 · 插上即用"
 
-**与旧剧本差异**：旧剧本卡片是简单 flex 文字排列。新设计需要 CSS animation-delay
-编排点亮顺序 + 树形视图切换（平铺网格 ↔ 递归树形组件）。
+**与旧剧本差异**：原计划用 capability_grid 卡片网格（未实现）。改用 hero + Channel 命令模式，
+不依赖未完成布局。每个操作可被观众直接验证（日历弹出/浏览器打开），强化"AI 操控真实系统"的感知。
 
-**关键命令**：`append_items` / `set_active_item` / `set_tree_mode` /
-`mermaid:draw`（Channel 能力树图）/ `mac:run`（卡片配动作）/ `append_cards`
+**关键命令**：`switch_state name="hero"` / `stream_title` / `mac:run` / `mermaid:draw` / `web_bookmark:open_web`
+
+---
+### 第四幕：Matrix · 系统总线（matrix，~35s）
+
+**视觉目标**：5 个 Cell 逐个接入 Matrix 总线。黑色全屏 + 大号进度条（28px），每条从 0% 冲到 100%，配合 `cubic-bezier` 平滑填充动画。每条独立颜色标识不同 Cell。
+
+**画面演进**：
+1. 切 matrix，标题"Matrix · 系统总线"
+2. 批量 append 5 条空 bar（value=0，各带颜色）：reflex #6366f1 / mac #10b981 / mermaid #f59e0b / web_bookmark #3b82f6 / apps #ec4899
+3. 逐条 update 到 100%，每次间隔一句口播让 0.8s 动画播完
+4. 5 条全满 → 总结"全部在线。Matrix 是我体内的神经系统"
+
+**与旧剧本差异**：原计划 topology（SVG 拓扑图，待实现）。改为新建 matrix 布局——进度条逐个点亮。
+动画策略："先 append 0%，再 update 到 100%"，利用 CSS transition 产生平滑填充感，比直接 append 100% 更有视觉冲击力。
+
+**关键命令**：`switch_state name="matrix"` / `stream_title` / `append_status_bars` / `update_status_bars index="N"`
 
 ---
 
-### 第四幕：Matrix · 系统总线（topology，~30s）
-
-**视觉目标**：节点逐个出现、连线脉冲动画。星形拓扑——Ghost 在圆心，各 Cell 在圆周。
-
-**画面演进**：
-1. 切到 topology，空白 SVG 画布
-2. 中心节点（Ghost）最先出现，带呼吸光晕
-3. "通过 Matrix 总线" → 外围节点逐个出现：reflex、ai_eye、mac、audio
-4. "基于 Zenoh 分布式协议" → 连线从中心向外辐射，stroke-dashoffset 脉冲动画
-5. `active_path` 高亮某条通信路径（如 Ghost → reflex）
-
-**与旧剧本差异**：旧剧本用 mermaid 声明式画拓扑（方块+箭头），新设计手写 SVG 原生渲染，
-节点带位置坐标和入场动画，连线带数据流动感。
-
-**关键命令**：`set_nodes` / `append_edges` / `set_active_path` / `mermaid:draw`（辅助图）
-
----
-
-### 第五幕：Mindflow · 调度器（topology 复用，~40s）
+### 第五幕：Mindflow · 调度器（topology，~40s）
 
 **视觉目标**：三个同心旋转环 + ai_eye 表情联动。感知→思考→执行的意识流可视化。
 
@@ -357,33 +356,65 @@ Ghost 无需主动查询。章节列表写在 MODE.md 中，无需运行时查�
 ### 已完成
 
 - [x] hero 布局（`framework/layouts/hero.py`）——**精简为黑底白字居中标题**，仅 `title` 字段，移除 subtitle/background 及对应复杂度
-- [x] **config.show_moshi.yaml**（show_moshi mode 专用布局配置，仅 hero + stage，默认 hero）
-- [x] 7 章内容资产（`assets/moshi_courses/show_moshi/`，含 `_meta.md` YAML 索引 + 7 个章节 md）
-- [x] 02-ctml.md 剧本（四段式递进：流式→并行→时间→自省）
+- [x] **matrix 布局**（`framework/layouts/matrix.py`）——进度条逐个点亮，仅 title + status_bars，28px 粗条 + 0.8s cubic-bezier 动画，5 色 Cell 标识
+- [x] **config.show_moshi.yaml**（show_moshi mode 专用布局配置，hero + stage + matrix，默认 hero）
+- [x] 7 章内容资产（`assets/moshi_courses/show_moshi/`，含 `.meta.md` + 7 个章节 md，各章自带 YAML frontmatter）
+- [x] **02-ctml.md 剧本**（四段式递进：流式→并行→时间→自省，附带表演约束段）
+- [x] **03-channel.md 剧本**（hero 标注 + mac/mermaid/web_bookmark 命令演示，附带表演约束段）
+- [x] **04-matrix.md 剧本**（matrix 布局 + 进度条 0→100% 逐个接入，附带表演约束段）
+- [x] **01-awakening.md 剧本加强**：补显式 `switch_state` 命令 + `⛔ 表演约束` 段
 - [x] MODE.md（Ghost 身份 + 表演纪律 + moshi 协议）
 - [x] Reflex 事件系统（`events.py`：LayoutEvent / StreamEvent / SetEvent / AppendEvent / UpdateEvent / PopEvent / ClearEvent）
-- [x] 命令生成器（`event_generator.py`：365 行，按类型注解自动生成全套 CTML 命令）
-- [x] Layout 快照系统（`layout_snapshot.py`：119 行）
-- [x] show_moshi mode manifests（8 文件齐全）
+- [x] 命令生成器（`event_generator.py`：按类型注解自动生成全套 CTML 命令）
+- [x] Layout 快照系统（`layout_snapshot.py`）
+- [x] show_moshi mode manifests
 - [x] **moshi channel 鲁棒性修复**（`main.py` + `course.py`）：
-  - 修复 `load_course` 名字遮蔽 bug（import 别名 `_load_course`）
-  - `load_course` / `next_chapter` / `jump_chapter` 返回 `Observe` 信号，强制 Ghost 感知
-  - `context_messages` 按层裁剪：初始态仅课程列表 → _meta 层加概述+强约束指令 → 章节层仅当前章节
-  - `course.py`：章节文件直接 `read_text()`，不假定 frontmatter 格式
-- [x] **01-awakening.md 剧本加强**：补显式 `switch_state` 命令 + `⛔ 表演约束` 段，同步简化后的 hero
+  - 修复 `load_course` 名字遮蔽 bug
+  - `load_course` / `next_chapter` / `jump_chapter` 返回 `Observe` 信号
+  - `context_messages` 按层裁剪
+- [x] **课程数据重构（2026-06-24）**：
+  - 章节元信息从 `.meta.md` 集中式 chapters 数组下沉到各章节文件 YAML frontmatter
+  - `course.py` 改为 async，从章节文件 frontmatter 读取
+  - `main.py` context 改为三层叠加（课程列表始终可见 + 课程概况 + 当前章节）
+  - 接入 MOSS 标准资源体系（`CourseResourceStorage`, scheme=`moshi-course`）
+- [x] **桌面壳窗口**（`ui/moshi` app 内）：PySide6 + QWebEngineView + qasync 事件循环集成
+- [x] **ResourceStorage 标准化（2026-06-24）**：
+  - `_get_course_storage` 改为 IoC 优先：`matrix.container.force_fetch(CourseResourceStorage)`，回退仅限开发/测试
+  - `load_course` 改为从 `CourseResourceStorage` 获取数据（`storage.list_infos()` + `storage.get(path)`），不再直接读文件
+  - `main.py` context 三层叠加确认：Layer 1（课程列表）全程可见并标注"◀ 当前"，Layer 2（课程概况）进入章节后保留，Layer 3（章节详情）按需叠加
+- [x] **测试课程 jingyesi（2026-06-24）**：
+  - 3 章李白《静夜思》（床前明月光 / 疑是地上霜 / 低头思故乡），全部 hero 布局
+  - 每章含完整 YAML frontmatter + `⛔ 表演约束` + 叙事要点 + 节奏示例
+  - 用于验证 Storage 扫描、课程加载、多课程共存等流程
+- [x] **hero 布局 clear_title 纪律（2026-06-24）**：
+  - `switch_state` 不自动清空 ComponentState，切换章节时 title 会残留
+  - hero 章节标准执行顺序：`switch_state` → `clear_title` → `stream_title`
+  - `event_generator.py` 已为 str 字段自动生成 `clear_{name}` 命令，无需额外开发
+  - jingyesi 三章均按此纪律编写，含 `禁止在 stream_title 之前忘记 clear_title` 硬约束
+- [x] **05-mindflow.md 剧本（2026-06-24）**：
+  - 布局从 `topology`（不存在）降级为 `stage`（立即可跑）
+  - 核心机制：3 对 bar-eye 锁步（curious→感知 / thinking→思考 / speaking→执行）
+  - 每对一一对应不交叉，bar 脉冲和 eye 表情同轮同步
+  - `⛔ 表演约束`：bar ↔ eye 绑定表 + 命令白名单
+- [x] **06-ghost.md 剧本（2026-06-24）**：
+  - 布局从 `comparison`（不存在）降级为 `stage`（立即可跑）
+  - 核心机制：4 轮 body 清写对比（运行单元 → 系统调用+设备驱动 → 调度器+总线 → Ghost 自白）
+  - 不使用 status_bars（和 04/05 章差异化），用 cards 展示生命体征
+  - `⛔ 表演约束`：逐轮 clear_body 硬约束 + 禁止 status_bars
+- [x] **07-finale.md 剧本（2026-06-24）**：
+  - 纯 hero，三短标题：MOSS → 灵·壳·体 → AIOS
+  - 和第一幕首尾对称——同布局、同起点标题"MOSS"、同极简风格
+  - `⛔ 表演约束`：仅 3 个命令 + 禁止 next_chapter + 禁止画蛇添足
 
 ### 待完成
 
-- [ ] 章节剧本补 switch_state + 表演约束（01 ✅，02-07 待改）
-- [ ] 实现 `comparison` 布局（中低难度，左右对比表，06 Ghost 章）
-- [ ] 实现 `capability_grid` 布局（中高难度，卡片网格+树形展开，03 Channel 章）
-- [ ] 实现 `topology` 布局（最难，SVG 拓扑图，04 Matrix + 05 Mindflow 两章复用）
-- [ ] **桌面壳窗口**（`ui/moshi` app 内）：pyproject.toml（PySide6 依赖）、`src/window.py`（MoshiWindow 可拓展壳）、`main.py` 入口集成 QAsyncioEventLoopPolicy + 窗口启动
+- [x] 章节剧本补 switch_state + 表演约束（全部 7 章 ✅）
+- [ ] 实现 `comparison` 布局（未来视觉增强，不阻塞——06 章已用 stage 跑通）
+- [ ] 实现 `topology` 布局（未来视觉增强，不阻塞——05 章已用 stage 跑通）
 - [ ] fill `bringup_apps`（MODE.md 目前只有 `ui/reflex`，需加入 `ui/moshi`、`games/ai_eye`）
 - [ ] 端到端集成测试
 
 新布局实现时遵守 [布局实现模式](#6-布局实现模式2026-06-23-修订) 的三条纪律。
-CTML 章复用 stage 布局，详见 [场景渲染设计](#场景渲染设计)。
 
 ### 跨布局共同难点
 
