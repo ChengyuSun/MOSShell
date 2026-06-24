@@ -72,7 +72,7 @@ async def import_videos(
 
         try:
             meta = LocalVideoInfo(
-                path=stem,
+                path=name,
                 description=stem.replace("_", " ").replace("-", " "),
             )
             item = LocalVideoItem(meta, vid_path)

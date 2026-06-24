@@ -109,7 +109,7 @@ def _apply_event_to_state(substate, event: EventModel, state_class: type[rx.Stat
     elem_type = args[0] if args else None
 
     if isinstance(event, ClearEvent):
-        if type_hint is str:
+        if isinstance(type_hint, type) and issubclass(type_hint, str):
             setattr(substate, field, "")
             return ""
         elif origin is list:
@@ -128,13 +128,13 @@ def _apply_event_to_state(substate, event: EventModel, state_class: type[rx.Stat
             return ""
 
     elif isinstance(event, StreamEvent):
-        if type_hint is str:
+        if isinstance(type_hint, type) and issubclass(type_hint, str):
             val = getattr(substate, field)
             new_val = val + event.chunk
             setattr(substate, field, new_val)
             logger.info("StreamEvent str field=%r old=%r chunk=%r new=%r", field, val, event.chunk, new_val)
             return new_val
-        elif origin is list and elem_type is str:
+        elif origin is list and isinstance(elem_type, type) and issubclass(elem_type, str):
             lst = getattr(substate, field)
             if lst:
                 lst[-1] += event.chunk
@@ -147,7 +147,7 @@ def _apply_event_to_state(substate, event: EventModel, state_class: type[rx.Stat
     elif isinstance(event, AppendEvent):
         if origin is list:
             lst = getattr(substate, field)
-            if elem_type is str:
+            if isinstance(elem_type, type) and issubclass(elem_type, str):
                 lst.append(event.data)
             elif isinstance(elem_type, type) and issubclass(elem_type, pydantic.BaseModel):
                 parsed = elem_type.model_validate_json(event.data) if isinstance(event.data, str) else event.data
@@ -294,12 +294,26 @@ async def context_messages():
             )
 
     registry = ChannelCtx.container().force_fetch(ResourceRegistry)
-    infos =  await registry.list_infos(scheme="pil-image")
     resource_msg = Message.new(tag="resources")
-    for info in infos:
+
+    image_infos = await registry.list_infos(scheme="pil-image")
+    for info in image_infos:
         resource_msg.with_content(
             f"locator: {info.locator} description: {info.description}\n"
         )
+
+    video_infos = await registry.list_infos(scheme="local-video")
+    for info in video_infos:
+        resource_msg.with_content(
+            f"locator: {info.locator} description: {info.description}\n"
+        )
+
+    webm_infos = await registry.list_infos(scheme="local-webm")
+    for info in webm_infos:
+        resource_msg.with_content(
+            f"locator: {info.locator} description: {info.description}\n"
+        )
+
     messages.append(resource_msg)
     return messages
 

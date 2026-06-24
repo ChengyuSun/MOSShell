@@ -181,29 +181,6 @@ class LocalVideoStorage(ResourceStorage[LocalVideoInfo, Path]):
 
     # -- internal ------------------------------------------------------
 
-    def _to_info(self, file_path: Path) -> LocalVideoInfo:
-        """从文件系统路径构建 LocalVideoInfo (仅用于引导)."""
-        rel = file_path.name
-        stat = file_path.stat()
-        import mimetypes
-        mime_type, _ = mimetypes.guess_type(str(file_path))
-        return LocalVideoInfo(
-            host=self._host,
-            path=file_path.stem,
-            description=file_path.stem.replace("_", " ").replace("-", " "),
-            file_name=file_path.name,
-            file_size=stat.st_size,
-            content_type=mime_type or "video/mp4",
-        )
-
-    def _scan(self) -> list[Path]:
-        """扫描目录中的视频文件 (仅用于引导/导入存量文件)."""
-        files = []
-        for entry in self._files_dir.iterdir():
-            if entry.is_file() and entry.suffix.lower() in _VIDEO_EXTENSIONS:
-                files.append(entry)
-        return sorted(files)
-
     def _find_meta(self, path: str) -> LocalVideoInfo | None:
         for line in self._read_lines():
             meta = LocalVideoInfo.model_validate_json(line)

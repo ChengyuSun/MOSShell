@@ -10,8 +10,11 @@
 
 启动时附带原生桌面壳窗口（PySide6 + QWebEngineView），内嵌 reflex 前端，
 替代浏览器。Qt 和 MOSS Matrix 通过 qasync 共享主线程的单一 asyncio 事件循环。
+
+底部字幕条流式消费 matrix.session.get_logos()，在窗口中实时渲染 Ghost 输出。
 """
 
+import asyncio
 import sys
 
 import qasync
@@ -33,16 +36,26 @@ async def _get_course_storage(matrix: Matrix) -> CourseResourceStorage:
     回退路径：直接构建（开发/测试环境，mode manifests 未加载时）。
     """
     # 标准路径：从 IoC 容器获取已注册的 CourseResourceStorage
-    try:
-        return matrix.container.force_fetch(CourseResourceStorage)
-    except (KeyError, AttributeError):
-        pass
+    return matrix.container.force_fetch(CourseResourceStorage)
 
-    # 回退：直接构建（mode 的 resources.py 未加载或测试环境）
-    assets_dir = matrix.workspace.assets().abspath() / "moshi_courses"
-    storage = CourseResourceStorage(assets_dir)
-    storage.scan()
-    return storage
+
+async def _stream_logos(matrix: Matrix, window: MoshiWindow) -> None:
+    """后台消费 Ghost logos 流，喂入字幕条。"""
+    import logging
+    _log = logging.getLogger("moshi.logos")
+    try:
+        session = matrix.session
+        sid = session.session_id
+        key = session.stream_key_expr(f"logos/{sid}")
+        window.subtitle.set_status(f"session: {sid[:12]}... | key: ...{key[-40:]}")
+        async for delta in session.get_logos():
+            window.subtitle.append_text(delta)
+            window.subtitle.set_status("")  # 收到数据后清掉状态
+    except asyncio.CancelledError:
+        pass
+    except Exception:
+        _log.exception("logos stream error")
+        window.subtitle.set_status("logos stream error")
 
 
 async def _scan_from_storage(storage: CourseResourceStorage) -> dict[str, CourseMeta]:
@@ -241,7 +254,13 @@ async def _run():
     matrix = Matrix.discover()
     app.aboutToQuit.connect(matrix.close)
 
-    await matrix.arun(main)
+    async def _combined(m: Matrix) -> None:
+        await asyncio.gather(
+            main(m, window),
+            _stream_logos(m, window),
+        )
+
+    await matrix.arun(_combined)
 
 
 if __name__ == "__main__":
