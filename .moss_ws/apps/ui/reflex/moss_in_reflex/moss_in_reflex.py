@@ -14,9 +14,9 @@ import pydantic
 import reflex as rx
 from PIL import Image
 from ghoshell_common.contracts import YamlConfig, WorkspaceConfigs, DefaultFileStorage
-from ghoshell_moss import PyChannel, Message, Text, Matrix
+from ghoshell_moss import PyChannel, Message, Text, Matrix, Observe
 from ghoshell_moss.contracts import ResourceRegistry
-from ghoshell_moss.core import ChannelCtx
+from ghoshell_moss.core import ChannelCtx, PyCommand
 from ghoshell_moss.core.concepts.channel import ChannelRuntime
 from pydantic import Field
 
@@ -329,6 +329,24 @@ def _frontend_url():
     return f"当前前端页面地址为 http://{host}:{port}"
 
 
+async def _switch_layout(layout_name: str) -> Observe:
+    """切换当前布局和 ChannelState，并强制模型观察新上下文。"""
+    valid = {l.name() for l in LAYOUTS}
+    if layout_name not in valid:
+        return Observe.new(
+            f"Unknown layout '{layout_name}'. Available: {', '.join(sorted(valid))}"
+        )
+
+    # 通过 kernel 的 switch_state 切换 ChannelState
+    # 内部 on_startup 会发送 LayoutEvent 触发 Reflex UI 切换
+    runtime = ChannelCtx.runtime()
+    if runtime is not None and hasattr(runtime, "switch_state"):
+        await runtime.switch_state(layout_name)
+
+    logger.info("switch_layout: %s", layout_name)
+    return Observe.new(f"Switched to layout: {layout_name}")
+
+
 async def moss():
     chan = PyChannel(name="reflex", description="提供基于Reflex框架的流式GUI页面，用于AI实时渲染")
     chan.build.instruction(_frontend_url)
@@ -342,6 +360,13 @@ async def moss():
             continue
 
         chan.with_state(state)
+
+    chan.build.add_command(PyCommand(
+        func=_switch_layout,
+        name="switch_layout",
+        always_observe=True,
+        doc="切换当前布局。参数 layout_name 为目标布局名称。切换后强制模型观察新布局上下文。",
+    ))
 
     matrix = Matrix.discover()
     async with matrix:

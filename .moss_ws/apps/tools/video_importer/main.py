@@ -18,6 +18,7 @@ from ghoshell_moss.core.resources.local_video import (
     LocalVideoInfo,
     LocalVideoItem,
     LocalVideoStorage,
+    LocalWebmStorage,
 )
 
 _APP_DIR = Path(__file__).resolve().parent
@@ -76,6 +77,10 @@ async def import_videos(
                 description=stem.replace("_", " ").replace("-", " "),
             )
             item = LocalVideoItem(meta, vid_path)
+
+            if isinstance(storage, LocalWebmStorage) and on_progress:
+                on_progress(i, len(video_paths), name, "converting to WebM...")
+
             locator = await storage.put(item)
             existing_names.add(name)
             stats["imported"] += 1
@@ -93,6 +98,7 @@ async def import_videos(
 # -- GUI ------------------------------------------------------------------
 
 def main_gui() -> None:
+    import threading
     import tkinter as tk
     from tkinter import filedialog, messagebox, ttk
 
@@ -103,6 +109,7 @@ def main_gui() -> None:
 
     selected_dir = tk.StringVar()
     host_var = tk.StringVar(value="workspace-assets")
+    force_webm_var = tk.BooleanVar(value=False)
     status_var = tk.StringVar(value="Ready.")
     file_count_var = tk.StringVar(value="")
 
@@ -114,7 +121,48 @@ def main_gui() -> None:
         vids = scan_videos(Path(path))
         file_count_var.set(f"{len(vids)} video(s) found")
 
-    async def do_import() -> None:
+    def _schedule_ui(cb) -> None:
+        root.after_idle(cb)
+
+    def _on_import_done() -> None:
+        progress_bar["value"] = 0
+        status_var.set("Ready.")
+        import_btn["state"] = "normal"
+
+    def _bg_import(video_paths: list[Path]) -> None:
+        """Run the async import in a background thread so tkinter stays responsive."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(_do_import(video_paths))
+        except Exception as exc:
+            _schedule_ui(lambda: messagebox.showerror("Error", str(exc)))
+        finally:
+            loop.close()
+            _schedule_ui(_on_import_done)
+
+    async def _do_import(video_paths: list[Path]) -> None:
+        if force_webm_var.get():
+            storage = LocalWebmStorage(_assets_dir(), host=host_var.get())
+        else:
+            storage = LocalVideoStorage(_assets_dir(), host=host_var.get())
+
+        def update(i: int, total: int, name: str, status: str) -> None:
+            def _apply() -> None:
+                progress_bar["value"] = i + 1
+                status_var.set(f"[{i + 1}/{total}] {name}: {status}")
+            _schedule_ui(_apply)
+
+        stats = await import_videos(storage, video_paths, on_progress=update)
+
+        def _show_done() -> None:
+            messagebox.showinfo(
+                "Done",
+                f"Imported: {stats['imported']}\nSkipped: {stats['skipped']}\nErrors: {stats['errors']}",
+            )
+        _schedule_ui(_show_done)
+
+    def run_import() -> None:
         path = selected_dir.get()
         if not path:
             messagebox.showwarning("Warning", "Select a directory first")
@@ -127,29 +175,7 @@ def main_gui() -> None:
 
         progress_bar["maximum"] = len(video_paths)
         import_btn["state"] = "disabled"
-
-        storage = LocalVideoStorage(_assets_dir(), host=host_var.get())
-
-        def update(i: int, total: int, name: str, status: str) -> None:
-            progress_bar["value"] = i + 1
-            status_var.set(f"[{i + 1}/{total}] {name}: {status}")
-            root.update_idletasks()
-
-        try:
-            stats = await import_videos(storage, video_paths, on_progress=update)
-            messagebox.showinfo(
-                "Done",
-                f"Imported: {stats['imported']}\nSkipped: {stats['skipped']}\nErrors: {stats['errors']}",
-            )
-        except Exception as exc:
-            messagebox.showerror("Error", str(exc))
-        finally:
-            progress_bar["value"] = 0
-            status_var.set("Ready.")
-            import_btn["state"] = "normal"
-
-    def run_import() -> None:
-        asyncio.run(do_import())
+        threading.Thread(target=_bg_import, args=(video_paths,), daemon=True).start()
 
     # -- layout --
     frame = ttk.Frame(root, padding=20)
@@ -173,6 +199,14 @@ def main_gui() -> None:
     ttk.Label(host_frame, text="Host       ", width=11).pack(side=tk.LEFT)
     ttk.Entry(host_frame, textvariable=host_var, width=24).pack(side=tk.LEFT, padx=6)
 
+    # webm checkbox
+    webm_frame = ttk.Frame(frame)
+    webm_frame.pack(fill=tk.X, pady=6)
+    ttk.Checkbutton(
+        webm_frame, text="Force convert to WebM (VP9) — import into local-webm storage",
+        variable=force_webm_var,
+    ).pack(side=tk.LEFT, padx=11)
+
     # progress
     progress_bar = ttk.Progressbar(frame, mode="determinate")
     progress_bar.pack(fill=tk.X, pady=(16, 6))
@@ -191,7 +225,7 @@ def main_gui() -> None:
 
 # -- MOSS Channel ---------------------------------------------------------
 
-async def _do_import_dir(directory: str, host: str) -> str:
+async def _do_import_dir(directory: str, host: str, force_webm: bool = False) -> str:
     dir_path = Path(directory).resolve()
     if not dir_path.is_dir():
         return f"Error: '{directory}' is not a valid directory"
@@ -200,7 +234,10 @@ async def _do_import_dir(directory: str, host: str) -> str:
     if not video_paths:
         return f"No supported videos found in '{directory}'"
 
-    storage = LocalVideoStorage(_assets_dir(), host=host)
+    if force_webm:
+        storage = LocalWebmStorage(_assets_dir(), host=host)
+    else:
+        storage = LocalVideoStorage(_assets_dir(), host=host)
     stats = await import_videos(storage, video_paths)
     return f"{stats['imported']} imported, {stats['skipped']} skipped, {stats['errors']} errors"
 
@@ -212,13 +249,14 @@ async def main(matrix: Matrix) -> None:
     )
 
     @channel.build.command()
-    async def import_dir(directory: str, host: str = "workspace-assets") -> str:
-        """Import all video files from a directory into local-video resource storage.
+    async def import_dir(directory: str, host: str = "workspace-assets", force_webm: bool = False) -> str:
+        """Import all video files from a directory into resource storage.
 
-        directory: absolute path to a directory with video files
-        host:      storage host name (default: workspace-assets)
+        directory:  absolute path to a directory with video files
+        host:       storage host name (default: workspace-assets)
+        force_webm: convert to WebM (VP9) and import into local-webm storage
         """
-        return await _do_import_dir(directory, host)
+        return await _do_import_dir(directory, host, force_webm=force_webm)
 
     @channel.build.command()
     async def list_videos(query: str = "", limit: int = 50) -> str:

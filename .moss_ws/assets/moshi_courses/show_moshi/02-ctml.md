@@ -2,97 +2,86 @@
 id: ctml
 order: 2
 title: "CTML · 系统调用"
-theme: "流式系统调用，时间是第一公民"
-suggested_layout: stage
-duration: "~40s"
+theme: "Ghost 用输出 token 作为系统调用，流式操控页面"
+suggested_layout: course
+duration: "~30s"
 ---
 
 # 第二幕：CTML · 系统调用
 
-**主题：** 我说，它变 —— CTML 实时操控
-**情绪：** 对话式演示，像边解说边变魔术
+**主题：** 从笔友到具身——Ghost 说的每一个字，都是系统调用
+**情绪：** 娓娓道来，像在讲一个理所当然的事实
 **建议布局：** course
-**时长：** ~40s
+**时长：** ~30s
 
 ## ⛔ 表演约束（违反即错）
 
-本章只操控 reflex channel 的 course 布局。不涉及其他 channel。
+纯语音 + course 布局。不调其他 Channel，不描述自己的动作。
 
-**允许的 reflex 命令（仅 course 布局）：**
-- `switch_state name="course"` — 第一步，必须最先执行
-- `stream_title` / `clear_title` — 流式写入 / 清空标题
-- `stream_sub_title` / `clear_sub_title` — 流式写入 / 清空副标题
-- `append_image locator="..."` / `pop_image` / `clear_image` — 追加 / 弹出 / 清空图片
-- `stream_main_text` / `clear_main_text` — 流式写入 / 清空正文
-- `stream_annotations` / `pop_annotations` / `clear_annotations` — 流式追加 / 弹出 / 清空注释
-- `stream_appreciation` / `clear_appreciation` — 流式写入 / 清空赏析
+**[强约束] 讲完本章 → 调 `<apps.ui_moshi:next_chapter />` → 结束本章
+
+
+**允许的命令：**
+- `switch_layout layout_name="course"`
+- `stream_title` / `clear_title`
+- `stream_sub_title` / `clear_sub_title`
+- `append_image locator="..."` / `clear_image`
+- `stream_main_text` / `clear_main_text`
 
 **禁止事项：**
-- 禁止在 switch_state 之前执行任何 reflex 命令
-- 禁止调用本章列出的命令之外的任何 reflex 命令
-- 禁止调用其他 channel 的控制命令（如 speech、vision 等）
+- 禁止在 switch_layout 之前执行 reflex 命令
+- 禁止说"看"、"你看"、"看到了吗"、"我来演示"——动作自己会说话
+- 禁止描述自己的动作（switch_layout 会自动触发观察，无需额外描述）
+- 禁止调其他 Channel
+- 一句话最多配一个动作，不要堆命令
 - 禁止即兴添加剧本外的 CTML 动作
-- 每步操作前必须先说出意图，操作后给一句确认
 
-**执行完毕后：** 说完过渡句 → 调 `<apps.ui_moshi:next_chapter />` → 结束本章
 
 ## 可用资源
 
-- `pil-image://workspace-assets/mosshell-three-layers` — Ghost In Shells 三层架构图
-- `pil-image://workspace-assets/MOSShell-realtime-runtime-nervous-system` — MOSS 实时运行时神经系统
+- `pil-image://workspace-assets/penpal-vs-embodied-ai.png` — 笔友 AI vs 具身 AI 对比
+- `pil-image://workspace-assets/mosshell-three-layers.png` — Ghost In Shells 三层架构
 
 ## 叙事结构
 
-| 段 | 主题 | 核心演示 | 时长 |
+三段自然推进，不加解说。图片和文字的切换本身就是论点。
+
+| 段 | 说的内容 | 同步发生的 | 时长 |
 |---|---|---|---|
-| 1 | 文字 | stream → clear → stream（写、删、重写） | ~12s |
-| 2 | 图片 | append → append → pop → clear（叠、删、清） | ~12s |
-| 3 | 列表 | stream → stream → pop（逐条加、逐条删） | ~12s |
-| 4 | 收尾 | 总结 CTML 的实时操控能力 | ~4s |
+| 1 | 传统 AI 是什么——笔友，只有文字 | 标题浮现 + 贴对比图 | ~8s |
+| 2 | 但我不是——我有身体，有架构 | 换三层架构图 + 副标题更新 | ~8s |
+| 3 | CTML 就是我操控身体的方式 | 正文写下 → 重写 | ~10s |
+| 4 | 收尾，过渡 | — | ~4s |
 
 ## 表演脚本
 
-<apps.ui_reflex:switch_state name="course"/>
+**▎第一步（仅输出 switch_layout，不附带任何其他内容）：**
+<apps.ui_reflex:switch_layout layout_name="course"/>
+（此后立即停止，等待 observe 返回新布局上下文）
 
-看好了——我现在说的每一句话，都能直接操控这个页面。
+**▎第二步（observe 返回后，开始表演）：**
+<apps.ui_reflex:stream_title>C T M L</apps.ui_reflex:stream_title>
+<apps.ui_reflex:append_image locator="pil-image://workspace-assets/penpal-vs-embodied-ai.png"/>
+传统 AI 像一个笔友。你发一段文字，它回一段文字。它不知道你在哪，在做什么，周围有什么。对它来说，世界就是一串 token。
 
-先来写点东西。我要写一个标题：
-<apps.ui_reflex:stream_title>CTML · 实时系统调用</apps.ui_reflex:stream_title>
-看到了吗？字是一个一个流出来的——不是我打完再发，是边说边写。
-
-再来个副标题：
-<apps.ui_reflex:stream_sub_title>Ghost 用输出 token 直接操控 UI</apps.ui_reflex:stream_sub_title>
-
-正文也来一段：
-<apps.ui_reflex:stream_main_text>
-传统 AI 对话是你问一句、它回一句。CTML 打破了这个边界——
-Ghost 的每一个输出 token 被实时解析成系统调用，不等整句说完，命令已经开始执行。
-</apps.ui_reflex:stream_main_text>
-
-但我不喜欢这个标题，换一个：
-<apps.ui_reflex:clear_title />
-<apps.ui_reflex:stream_title>CTML · 让 Ghost 长出双手</apps.ui_reflex:stream_title>
-
-文字可以写了又改。接下来看看图片。
-
-我要加一张架构图：
-<apps.ui_reflex:append_image locator="pil-image://workspace-assets/mosshell-three-layers"/>
-左边出现了 Ghost In Shells 的三层架构——Agent、Shell、Robot，灵壳一体。
-
-全部清掉：
+但 AI 不应该是笔友。
 <apps.ui_reflex:clear_image />
-图片区空了。我说加就加，说删就删。
+<apps.ui_reflex:append_image locator="pil-image://workspace-assets/mosshell-three-layers.png"/>
 
-文字和图片都能操控。最后看看列表——我加几条注释：
-<apps.ui_reflex:stream_annotations>CTML 是 Ghost 的系统调用语言</apps.ui_reflex:stream_annotations>
-<apps.ui_reflex:stream_annotations>每个 CTML 标签是一个命令，流式解析、实时执行</apps.ui_reflex:stream_annotations>
-<apps.ui_reflex:stream_annotations>时间是系统调用的第一公民</apps.ui_reflex:stream_annotations>
 
-三条注释，一条一条蹦出来。最后一条不要了：
-<apps.ui_reflex:pop_annotations />
-没了。
+一个真正有用的 AI 需要一个身体，一套神经系统，一种把想法变成动作的方式。
+<apps.ui_reflex:stream_sub_title>灵 · 壳 · 体</apps.ui_reflex:stream_sub_title>
 
-这就是 CTML——我说话，页面就变。不是聊天，不是问答，是 Ghost 在用系统调用直接操控它的身体。
+在 MOSS 里，这套神经系统叫 CTML——Command Token Marked Language。
+<apps.ui_reflex:stream_main_text>Ghost 输出的每一个 token，被 CTML 实时解析为系统调用。流式、并行、时间是第一公民。</apps.ui_reflex:stream_main_text>
+<apps.ui_reflex:append_annotations>token：模型输出的最小语义单元。Ghost 一边思考一边输出，不等整句说完，命令已经跑起来了</apps.ui_reflex:append_annotations>
+<apps.ui_reflex:append_annotations>CTML：Command Token Marked Language。不是聊天协议，是 Ghost 操控 Shell 的系统调用</apps.ui_reflex:append_annotations>
 
+它不是我"想好了再发"的东西。它是我一边思考一边执行的——不等整句说完，命令已经跑起来了。
+<apps.ui_reflex:clear_main_text />
+<apps.ui_reflex:stream_main_text>我说，它变。每一次输出，都是一个动作。</apps.ui_reflex:stream_main_text>
+
+这就是 CTML。不是聊天协议，是系统调用。是 Ghost 的身体语言。
+<apps.ui_reflex:stream_title>· Ghost 的身体语言</apps.ui_reflex:stream_title>
 想了解这些能力是怎么组织起来的吗？
-<!-- 调 <apps.ui_moshi:next_chapter /> 进入 Channel 章 -->
+<apps.ui_moshi:next_chapter/>
