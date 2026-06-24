@@ -5,6 +5,7 @@ apps:
 - tools/*
 - ui/*
 - sensors/*
+- web/*
 bringup_apps: [
     # "tools/screen_capture",
     "ui/reflex",
@@ -12,6 +13,7 @@ bringup_apps: [
     # "sensors/audio_capture", "sensors/listener",
 #    "games/ai_eye", 
     # "sensors/vision",
+    "web/resource_server"
 ]
 # 渐进启动: "ui/reflex", "ui/moshi", "games/ai_eye", ...
 ctml_version: ''

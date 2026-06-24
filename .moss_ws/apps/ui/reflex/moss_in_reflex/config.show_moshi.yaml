@@ -9,3 +9,4 @@ layouts:
   - "framework.layouts.course.CourseLayout"
   - "framework.layouts.stage.StageLayout"
   - "framework.layouts.matrix.MatrixLayout"
+  - "framework.layouts.media.MediaLayout"
