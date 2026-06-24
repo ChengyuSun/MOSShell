@@ -10,7 +10,7 @@ bringup_apps: [
     "ui/reflex",
     "ui/moshi",
     # "sensors/audio_capture", "sensors/listener",
-    "games/ai_eye", 
+#    "games/ai_eye", 
     # "sensors/vision",
 ]
 # 渐进启动: "ui/reflex", "ui/moshi", "games/ai_eye", ...

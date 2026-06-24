@@ -36,7 +36,16 @@ async def _get_course_storage(matrix: Matrix) -> CourseResourceStorage:
     回退路径：直接构建（开发/测试环境，mode manifests 未加载时）。
     """
     # 标准路径：从 IoC 容器获取已注册的 CourseResourceStorage
-    return matrix.container.force_fetch(CourseResourceStorage)
+    try:
+        return matrix.container.force_fetch(CourseResourceStorage)
+    except (KeyError, AttributeError):
+        pass
+
+    # 回退：直接构建（开发/测试环境，mode manifests 未加载时）
+    assets_dir = matrix.workspace.assets().abspath() / "moshi_courses"
+    storage = CourseResourceStorage(assets_dir)
+    storage.scan()
+    return storage
 
 
 async def _stream_logos(matrix: Matrix, window: MoshiWindow) -> None:
@@ -256,7 +265,7 @@ async def _run():
 
     async def _combined(m: Matrix) -> None:
         await asyncio.gather(
-            main(m, window),
+            main(m),
             _stream_logos(m, window),
         )
 
