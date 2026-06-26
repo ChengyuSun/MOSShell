@@ -68,7 +68,6 @@ duration: "~30s"
 <apps.ui_reflex:clear_image />
 <apps.ui_reflex:append_image locator="pil-image://workspace-assets/mosshell-three-layers.png"/>
 
-
 一个真正有用的 AI 需要一个身体，一套神经系统，一种把想法变成动作的方式。
 <apps.ui_reflex:stream_sub_title>灵 · 壳 · 体</apps.ui_reflex:stream_sub_title>
 

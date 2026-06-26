@@ -11,3 +11,5 @@ layouts:
   - "framework.layouts.matrix.MatrixLayout"
   - "framework.layouts.media.MediaLayout"
   - "framework.layouts.video_player.VideoPlayerLayout"
+  - "framework.layouts.brain.BrainLayout"
+  - "framework.layouts.danmaku.DanmakuLayout"

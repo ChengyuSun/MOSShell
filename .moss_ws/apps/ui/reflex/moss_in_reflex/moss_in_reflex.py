@@ -330,7 +330,7 @@ def _frontend_url():
 
 
 async def _switch_layout(layout_name: str) -> Observe:
-    """切换当前布局和 ChannelState，并强制模型观察新上下文。"""
+    """切换当前布局和 ChannelState，并强制模型观察新上下文，调用当前command后，需要等待返回值才能继续渲染"""
     valid = {l.name() for l in LAYOUTS}
     if layout_name not in valid:
         return Observe.new(
@@ -363,9 +363,6 @@ async def moss():
 
     chan.build.add_command(PyCommand(
         func=_switch_layout,
-        name="switch_layout",
-        always_observe=True,
-        doc="切换当前布局。参数 layout_name 为目标布局名称。切换后强制模型观察新布局上下文。",
     ))
 
     matrix = Matrix.discover()

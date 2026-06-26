@@ -10,13 +10,13 @@ bringup_apps: [
     # "tools/screen_capture",
     "ui/reflex",
     "ui/moshi",
-    # "sensors/audio_capture", "sensors/listener",
+    "sensors/audio_capture", 
+    "sensors/listener",
 #    "games/ai_eye", 
     # "sensors/vision",
     "web/resource_server"
 ]
-# 渐进启动: "ui/reflex", "ui/moshi", "games/ai_eye", ...
 ctml_version: ''
-description: Moshi 导演模式 — 章节化演示，Ghost 在章节框架内即兴表演
+description: show模式
 name: show_moshi
 ---

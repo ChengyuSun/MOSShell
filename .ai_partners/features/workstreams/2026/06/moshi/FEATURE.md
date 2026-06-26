@@ -3,7 +3,7 @@ title: Moshi — show_moshi 模式导演与演示布局体系
 status: in-progress
 priority: P1
 created: 2026-06-23
-updated: 2026-06-24T16:00
+updated: 2026-06-24T22:00
 depends: []
 milestone:
 description: >-
@@ -95,6 +95,20 @@ show_moshi 的 reflex 前端目前在 Chrome 浏览器中查看。用原生桌�
 
 **关键依赖**：PySide6（~200MB，含 Qt + Chromium）+ qasync（Qt/asyncio 事件循环桥接），仅 moshi app 的 pyproject.toml 声明，不污染主项目。
 
+### 8. switch_layout — observe 模式布局切换（2026-06-24）
+
+`switch_layout` 是 reflex channel 新增的 `always_observe=True` 命令，替代 `switch_state` 用于剧本中的布局切换。
+
+**两层语义**：
+- **Kernel 层**：调用 `runtime.switch_state(layout_name)` — 切换活跃 ChannelState，使新布局的命令集在 moss dynamic 中立即可用
+- **Reflex 层**：`switch_state → on_startup()` 内部发送 `LayoutEvent` — 触发 Reflex UI 重渲染
+
+**observe 强制中断**：`always_observe=True` 保证命令结果始终被解释器视为 Observe 信号。解释器执行完后立即中断当前 turn，取消后续所有命令，将 observe 消息 + `context_messages()` 推给模型。模型在下一 turn 拿到新布局上下文后继续。
+
+**剧本侧约束**：脚本中 `switch_layout` 独占一步（"仅输出 switch_layout，不附带任何其他内容"），之后立即停止。observe 返回后第二步才是表演内容。这是方案 1（剧本层兜底），后续可进阶到方案 2（Ghost Runtime 层中断模型生成）。
+
+**与 switch_state 的关系**：`switch_layout` 内部调用 `switch_state`，同时在返回类型上追加 observe 语义。两者不冲突——`switch_state` 仍是 kernel 通用原语，`switch_layout` 是 reflex channel 的专用布局切换命令。
+
 ### 6. 布局实现模式（2026-06-23 修订）
 
 分析 show 分支 CourseLayout（已验证）与 hero 初版（渲染失败）的差异，确立三条布局纪律：
@@ -116,29 +130,31 @@ show_moshi 的 reflex 前端目前在 Chrome 浏览器中查看。用原生桌�
 | `cohesion_field` | 暗空间粒子场，内容凝聚浮现 | title, sub_title, main_text, body, image | 01 Awakening, 06 Finale | ✅ 完成 |
 | `course` | 左图右文交互演示 | title, sub_title, image, main_text, annotations, appreciation | 02 CTML | ✅ 完成 |
 | `matrix` | 进度条逐个点亮接入 | title, status_bars | 03 Channel & Matrix (Act 1) | ✅ 完成 |
-| `hero` | **纯全屏沉浸视频播放** | videos (list[VideoLocator]) | 03 Channel & Matrix (Act 2) | ✅ 完成 |
-| `stage` | 三 bar 并发波动 + 正文 + 图片 | status_bars, title, subtitle, body, images, cards | 04 Mindflow | ✅ 完成 |
-| `mirror` | 左右对比表逐行浮现 | left_header, right_header, rows, stats | 05 Ghost | ✅ 完成 |
+| `brain` | **突触拓扑** — 中心大脑辐射连接节点，Canvas 动画引擎，数据包脉冲流动 | title, subtitle, status_bars | 03 Channel & Matrix (Act 1) 升级版 | ✅ 完成 |
+| `hero` | **纯全屏沉浸视频播放** | videos (list[VideoLocator]) | 04 具身 · 机器狗 | ✅ 完成 |
+| `stage` | 三 bar 并发波动 + 正文 + 图片 | status_bars, title, subtitle, body, images, cards | 05 Mindflow | ✅ 完成 |
+| `mirror` | 左右对比表逐行浮现 | left_header, right_header, rows, stats | 06 Ghost | ✅ 完成 |
 
-> **2026-06-24 修订**：hero 布局从"黑底白字标题"重构为**纯视频播放器**（仅 `videos` 字段，autoplay，无控制条），不再支持 `title`/`subtitle`。01 和 06 改用 cohesion_field。
-> 03 合并了 Channel + Matrix 两章（matrix 进度条接入 → hero 全屏视频收尾），删除了独立 04-matrix.md。总章数：7 → 6。
-> 05 从 stage+ai_eye 改为 **mirror 布局**——"传统 OS vs AIOS"逐行对比，右侧带 0.1s 微延迟。
-> topology/comparison 不再需要——mindflow 用 stage bar 并发展示，ghost 用 mirror 对比表。
+> **2026-06-24 修订**：
+> - hero 布局从"黑底白字标题"重构为**纯视频播放器**（仅 `videos` 字段，autoplay，无控制条）。01/07 改用 cohesion_field。
+> - 03（Channel & Matrix）拆分为两章：03 纯 matrix 进度条接入 + **04-robot_dog** 机器狗独立成章。总章数：6 → 7，后续重编号：04→05(mindflow)，05→06(ghost)，06→07(finale)。
+> - 新增 **switch_layout** 命令（`always_observe=True`，内部调用 `runtime.switch_state()`），所有剧本改用两步结构。
+> - jingyesi 课程改用 course 布局 + switch_layout，添加图片素材。
 
 ---
 
-## 场景渲染设计（六幕，~195s）
+## 场景渲染设计（七幕，~215s）
 
 ### 第一幕：觉醒（cohesion_field，~30s）
 
 **视觉目标**：暗空间粒子场，标题从边缘凝聚成形。身份宣告，极简。
 
 **画面演进**：
-1. 切 cohesion_field，粒子在暗空间缓慢流动
+1. `switch_layout` 切 cohesion_field，粒子在暗空间缓慢流动
 2. "我是 MOSS" → `stream_title` "MOSS" 从模糊到清晰凝聚浮现
 3. 三段口播配三段标题，每段 clear → stream
 
-**关键命令**：`switch_state name="cohesion_field"` / `clear_title` / `stream_title`
+**关键命令**：`switch_layout layout_name="cohesion_field"` / `clear_title` / `stream_title`
 
 ### 第二幕：CTML · 系统调用（course，~30s）
 
@@ -146,37 +162,43 @@ show_moshi 的 reflex 前端目前在 Chrome 浏览器中查看。用原生桌�
 
 **叙事线**："笔友 → 具身"——先贴笔友对比图，再换三层架构图，配合 title/subtitle/main_text 变化。不描述动作，让画面自己说话。
 
-**关键命令**：`switch_state name="course"` / `stream_title` / `stream_sub_title` / `stream_main_text` / `append_image` / `clear_image`
+**关键命令**：`switch_layout layout_name="course"` / `stream_title` / `stream_sub_title` / `stream_main_text` / `append_image` / `clear_image`
 
-### 第三幕：Channel & Matrix（matrix → hero，~50s）
+### 第三幕：Channel & Matrix（matrix，~35s）
 
-**视觉目标**：先 matrix 进度条逐个接入（4 条 Cell 0→100%），再切 hero 全屏视频。
+**视觉目标**：matrix 进度条逐个接入，4 条 Cell 0→100% 点亮。
 
-**两段式**：
-1. Matrix：四条 CellBar 逐个点亮（reflex/mac/mermaid/web_bookmark），每条配口播
-2. Hero：`<sleep duration="15"/>` 等视频播完，再收尾过渡
+**叙事线**：能力封装为 Channel → 逐条介绍 reflex/mac/mermaid/web_bookmark → 总结 Matrix 总线 → 过渡"我甚至可以控制机器狗"引入下一章。
 
-**关键命令**：`switch_state name="matrix"` / `append_status_bars` / `update_status_bars` / `switch_state name="hero"` / `append_videos locator="local-webm://workspace-assets/dog.webm"` / `sleep`
+**关键命令**：`switch_layout layout_name="matrix"` / `append_status_bars` / `update_status_bars` / `stream_title`
 
-### 第四幕：Mindflow · 调度器（stage，~40s）
+### 第四幕：具身 · 机器狗（hero，~20s）
+
+**视觉目标**：切 hero 全屏视频，纯视觉冲击。机器狗演示视频 autoplay 15s，不口播。
+
+**叙事线**：证明 Channel + Matrix 不是纸上谈兵——通过 Matrix 总线实时操控物理机器人。视频结束后过渡句收尾。
+
+**关键命令**：`switch_layout layout_name="hero"` / `append_videos locator="local-webm://workspace-assets/dog.webm"` / `sleep`
+
+### 第五幕：Mindflow · 调度器（stage，~40s）
 
 **视觉目标**：三条 status_bars 同时可见、独立波动——并发展示，不是串行接入。
 
 **核心机制**：三 bar 同时出现 → 逐条拉高（感知90%→思考85%→执行90%）→ 注意力转移（感知↓40%，执行↑95%），展示抢占调度。
 
-**关键命令**：`switch_state name="stage"` / `append_status_bars` / `update_status_bars` / `stream_body` / `append_images` / `append_cards`
+**关键命令**：`switch_layout layout_name="stage"` / `append_status_bars` / `update_status_bars` / `stream_body` / `append_images` / `append_cards`
 
-### 第五幕：Ghost · 智能进程（mirror，~30s）
+### 第六幕：Ghost · 智能进程（mirror，~30s）
 
 **视觉目标**：mirror 左右两列对比表——"传统 OS vs AIOS"，5 条对比行逐行浮现，右侧带 0.1s 微延迟。底部 stats 展示生命体征。
 
-**关键命令**：`switch_state name="mirror"` / `stream_left_header` / `stream_right_header` / `append_rows` / `stream_stats`
+**关键命令**：`switch_layout layout_name="mirror"` / `stream_left_header` / `stream_right_header` / `append_rows` / `stream_stats`
 
-### 第六幕：尾声（cohesion_field，~20s）
+### 第七幕：尾声（cohesion_field，~20s）
 
 **视觉目标**：和第一幕同布局（cohesion_field），三短标题首尾对称。MOSS → 灵·壳·体 → AIOS。
 
-**关键命令**：`switch_state name="cohesion_field"` / `clear_title` / `stream_title`
+**关键命令**：`switch_layout layout_name="cohesion_field"` / `clear_title` / `stream_title`
 
 ---
 
@@ -226,19 +248,23 @@ Ghost 无需主动查询。章节列表写在 MODE.md 中，无需运行时查�
 
 - [x] **hero 布局重构为纯视频播放器**（`framework/layouts/hero.py`）——仅 `videos: list[VideoLocator]` 字段，全屏 autoplay，无控制条
 - [x] **matrix 布局**（`framework/layouts/matrix.py`）——进度条逐个点亮，28px 粗条 + 0.8s cubic-bezier 动画
-- [x] **mirror 布局投入使用**（`framework/layouts/mirror.py`）——05 Ghost 章对比表，左右逐行浮现
-- [x] **cohesion_field 布局**（`framework/layouts/cohesion_field.py`）——01/06 首尾对称，粒子凝聚场
+- [x] **brain 布局**（`framework/layouts/brain.py`）——Canvas 突触拓扑，中心大脑脉动呼吸 + 节点环绕 + 贝塞尔连接线 + 数据包脉冲流动 + 逐个激活点亮（2026-06-25）
+- [x] **mirror 布局投入使用**（`framework/layouts/mirror.py`）——06 Ghost 章对比表，左右逐行浮现
+- [x] **cohesion_field 布局**（`framework/layouts/cohesion_field.py`）——01/07 首尾对称，粒子凝聚场
 - [x] **config.show_moshi.yaml**（show_moshi mode 专用布局配置）
-- [x] **6 章剧本全部重写**（`assets/moshi_courses/show_moshi/`）：
+- [x] **switch_layout 命令**（`moss_in_reflex.py`）——`always_observe=True`，内部调用 `runtime.switch_state()` 同步切换 ChannelState + Reflex UI
+- [x] **7 章剧本全部更新**（`assets/moshi_courses/show_moshi/`）：
+  - 全部改用 `switch_layout` + 两步结构（第一步仅 switch_layout，第二步 observe 返回后表演）
   - 01-awakening: cohesion_field，极简身份宣告
   - 02-ctml: course，"笔友→具身"交互叙事
-  - 03-channel: matrix → hero，Channel+Matrix 合并，视频收尾
-  - 04-mindflow: stage，三 bar 并发波动展示抢占调度
-  - 05-ghost: mirror，传统 OS vs AIOS 逐行对比
-  - 06-finale: cohesion_field，与 01 首尾对称
+  - 03-channel: matrix，Channel+Matrix 进度条接入（~35s）
+  - 04-robot_dog: hero，机器狗全屏视频（~20s，从 03 的 Act 2 独立）
+  - 05-mindflow: stage，三 bar 并发波动展示抢占调度
+  - 06-ghost: mirror，传统 OS vs AIOS 逐行对比
+  - 07-finale: cohesion_field，与 01 首尾对称
 - [x] **去掉所有外部 Channel 依赖**（mac/mermaid/web_bookmark/ai_eye/moss_self），纯 reflex 交互
 - [x] **图片/视频 locator 修正**：补 `.png`/`.webm` 后缀，host 统一为 `workspace-assets`
-- [x] **视频资源注册**：`dog.webm`（`local-webm://workspace-assets/dog.webm`），用于 03 章
+- [x] **视频资源注册**：`dog.webm`（`local-webm://workspace-assets/dog.webm`），用于 04 章
 - [x] Reflex 事件系统（`events.py`：LayoutEvent / StreamEvent / SetEvent / AppendEvent / UpdateEvent / PopEvent / ClearEvent）
 - [x] 命令生成器（`event_generator.py`：按类型注解自动生成全套 CTML 命令，含 VideoLocator 支持）
 - [x] MODE.md（Ghost 身份 + 表演纪律 + moshi 协议）
@@ -247,16 +273,19 @@ Ghost 无需主动查询。章节列表写在 MODE.md 中，无需运行时查�
   - CourseResourceStorage（scheme=moshi-course）
   - 桌面壳窗口（PySide6 + QWebEngineView + qasync）
   - context_messages 三层叠加
-- [x] **测试课程 jingyesi**（3 章静夜思，验证多课程共存）
+- [x] **jingyesi 测试课程已更新**（3 章静夜思，验证多课程共存）：
+  - 布局从 cohesion_field → course（更丰富的字段：sub_title/main_text/annotations/appreciation）
+  - 改为 `switch_layout` + 两步结构
+  - 添加李白/月夜相关图片素材（4 个 locator 按主题分配至各章）
 - [x] `<sleep>` CTML 原语用于视频等待（`sleep.py`，标准原语，始终注入）
 
 ### 待完成
 
-- [ ] 端到端集成测试（启动 moshi + reflex，跑完 6 幕）
+- [ ] 端到端集成测试（启动 moshi + reflex，跑完 7 幕）
 - [ ] 确认视频文件（dog.webm）已导入 local-webm storage
 - [ ] 确认图片文件（.png）已导入 pil-image storage
 - [ ] MODE.md bringup_apps 补全
-- [ ] jingyesi 测试课程同步更新为 cohesion_field（当前仍引用 hero 的 title 命令）
+- [ ] Ghost Runtime 层 observe 中断（方案 2）：当 `always_observe` 命令返回时，Ghost Runtime 主动中止模型生成，避免浪费 token
 
 ### 跨布局共同难点
 
