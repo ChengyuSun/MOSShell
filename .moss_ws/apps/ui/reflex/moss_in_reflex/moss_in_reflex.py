@@ -329,7 +329,7 @@ def _frontend_url():
     return f"当前前端页面地址为 http://{host}:{port}"
 
 
-async def _switch_layout(layout_name: str) -> Observe:
+async def switch_layout(layout_name: str) -> Observe:
     """切换当前布局和 ChannelState，并强制模型观察新上下文，调用当前command后，需要等待返回值才能继续渲染"""
     valid = {l.name() for l in LAYOUTS}
     if layout_name not in valid:
@@ -362,7 +362,7 @@ async def moss():
         chan.with_state(state)
 
     chan.build.add_command(PyCommand(
-        func=_switch_layout,
+        func = switch_layout,
     ))
 
     matrix = Matrix.discover()

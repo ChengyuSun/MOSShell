@@ -3,7 +3,7 @@ id: homesick
 order: 3
 title: "低头思故乡"
 theme: "情 — 举头低头间，乡愁喷薄"
-suggested_layout: hero
+suggested_layout: course
 duration: "~40s"
 ---
 
@@ -12,38 +12,44 @@ duration: "~40s"
 **诗句：** 举头望明月，低头思故乡
 **主题：** 情 — 举头低头间，乡愁喷薄
 **情绪：** 从确认到涌起，从看到到思念
-**建议布局：** hero
+**建议布局：** course
 **时长：** ~40s
 
 ## ⛔ 表演约束（违反即错）
 
 本章做收束。以下为硬约束：
 
-**允许的命令（仅此 3 个）：**
-- `<apps.ui_reflex:switch_state name="hero"/>` — 第一步，必须最先执行
-- `<apps.ui_reflex:clear_title />` — 清空上一章的残留标题
-- `<apps.ui_reflex:stream_title>...</apps.ui_reflex:stream_title>` — 流式填入诗句
+**允许的命令：**
+- `<apps.ui_reflex:switch_layout layout_name="course"/>` — 第一步，仅此一条，不附带任何其他内容
+- `stream_title` / `clear_title` — 诗句主体
+- `stream_sub_title` / `clear_sub_title` — 可选副标题
+- `stream_main_text` / `clear_main_text` — 赏析正文
+- `append_annotations` / `clear_annotations` — 注释条目
+- `stream_appreciation` / `clear_appreciation` — 鉴赏文字
 
 **禁止事项：**
-- 禁止在 switch_state 之前执行任何 reflex 命令
+- 禁止在 switch_layout 之前执行任何 reflex 命令
 - 禁止在 stream_title 之前忘记 clear_title
-- 禁止调用本章 3 个命令之外的任何命令
 - 本章是最后一章，不需要调 next_chapter
 - 禁止即兴添加剧本外的 CTML 动作
 - 禁止画蛇添足总结全诗——诗句本身留在画面上就是最好的结尾
 
 **执行完毕后：** 自然收束。让诗句留在画面上
 
-## 布局指南
+## 可用资源
 
-hero 布局。先 clear 清掉上一章标题，再填入新内容。
-前两句的大字停留片刻后，完整呈现后两句。
-让诗句本身留在画面上作为收束——不解释，不总结。
+- `pil-image://workspace-assets/5867f3aaee5f` — 李白，月下独酌，举杯望月，旷达超逸
+- `pil-image://workspace-assets/1a73ea380810` — 李白 portrait，Tang Dynasty poet，ethereal
+- `pil-image://workspace-assets/5523ed55d0fc` — 李白 portrait，solemn expression，monochrome ink
+- `pil-image://workspace-assets/e2ebae1a803f` — 月夜，满月悬天，远山江水，静谧悠远
 
 ## 节奏示例
 
 ```
-<apps.ui_reflex:switch_state name="hero"/>
+<apps.ui_reflex:switch_layout layout_name="course"/>
+（此后立即停止，等待 observe 返回新布局上下文）
+
+**▎第二步（observe 返回后，开始表演）：**
 <apps.ui_reflex:clear_title />
 
 他抬起头。那不是霜——是月亮。
