@@ -13,3 +13,4 @@ layouts:
   - "framework.layouts.video_player.VideoPlayerLayout"
   - "framework.layouts.brain.BrainLayout"
   - "framework.layouts.danmaku.DanmakuLayout"
+  - "framework.layouts.courtroom.CourtroomState"

@@ -23,10 +23,34 @@ from pydantic import Field
 from framework.events import EventModel, LayoutEvent, StreamEvent, SetEvent, AppendEvent, UpdateEvent, PopEvent, ClearEvent
 from framework.helpers.layout_snapshot import LayoutSnapshot
 from framework.runtime.event_generator import build
+from ghoshell_moss.core.concepts.topic import TopicModel
+
 
 # =========================== System ===========================
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)-5s %(name)s | %(message)s",
+    datefmt="%H:%M:%S",
+    force=True,
+)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+
+class FeishuMessage(TopicModel):
+    """飞书 IM 消息。由 Feishu App 发布到 Zenoh Topic，任意消费者订阅。
+
+    courtroom 布局将其消费为弹幕，其他布局可做日志、公告等用途。
+    """
+    text: str = Field(default="", description="消息文本内容")
+    level: str = Field(default="text", description="text | emphasis | system")
+
+    @classmethod
+    def topic_type(cls) -> str:
+        return "feishu/message"
+
+    @classmethod
+    def default_topic_name(cls) -> str:
+        return "feishu/message"
+
 
 
 class Config(YamlConfig):
@@ -367,6 +391,58 @@ async def moss():
 
     matrix = Matrix.discover()
     async with matrix:
+        # ── Feishu Message Topic subscription ──
+        # Must run BEFORE provide_channel — provide_channel blocks the
+        # current coroutine (awaiting arun_until_closed), so any code
+        # after it never executes. TopicWindow must be set up first.
+        try:
+            _loop = asyncio.get_running_loop()
+            _danmaku_window = matrix.session.topics.create_window_for(
+                FeishuMessage, max_size=50,
+            )
+            await _danmaku_window.wait_started()
+
+            _last_count = [0]  # mutable closure: track processed message count
+
+            def _on_feishu_message(window):
+                """TopicWindow.on_change callback — fires from Zenoh thread pool."""
+                values = window.values()
+                logger.info(
+                    "DANMAKU_CALLBACK layout=%s window_size=%d",
+                    _LAYOUT.name, len(values),
+                )
+                if _LAYOUT.name != "courtroom":
+                    logger.info("DANMAKU_SKIPPED layout=%s (not courtroom)", _LAYOUT.name)
+                    return
+                new_msgs = values[_last_count[0]:]
+                _last_count[0] = len(values)
+                if new_msgs:
+                    logger.info("DANMAKU_NEW_MSGS count=%d", len(new_msgs))
+                for msg in new_msgs:
+                    field = {
+                        "text": "danmaku_text",
+                        "emphasis": "danmaku_emphasis",
+                        "system": "danmaku_system",
+                    }.get(msg.level, "danmaku_text")
+                    logger.info("DANMAKU_PUSH level=%s text=%s", msg.level, msg.text[:50])
+                    try:
+                        _loop.call_soon_threadsafe(
+                            QUEUE.put_nowait,
+                            AppendEvent(field=field, data=msg.text),
+                        )
+                    except Exception:
+                        logger.exception("DANMAKU_QUEUE_FAILED")
+
+            _danmaku_window.on_change(_on_feishu_message)
+            logger.info(
+                "Feishu message window ready — topic=feishu/message max_size=%d",
+                _danmaku_window.max_size,
+            )
+        except ImportError:
+            logger.info("FeishuMessage not available — topic subscription skipped")
+        except Exception:
+            logger.exception("Failed to subscribe feishu/message topic")
+
         await matrix.provide_channel(chan)
 
 # =========================== MOSS ===========================

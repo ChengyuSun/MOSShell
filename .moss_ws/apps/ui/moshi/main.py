@@ -93,7 +93,7 @@ async def main(matrix: Matrix):
     channel = new_channel(
         name="moshi",
         description=(
-            "show_moshi 导演。自动列出可用课程，加载后管理章节推进。"
+            "moshi导演app，通过剧本逐章推进表演。"
         ),
     )
 
@@ -121,10 +121,10 @@ async def main(matrix: Matrix):
                 )
             courses_str = "\n".join(lines)
         else:
-            courses_str = "（无可用课程）"
+            courses_str = "（无可用剧本）"
         messages.append(
             Message.new("moshi_courses").with_content(
-                f"【可用课程】\n{courses_str}"
+                f"【可加载剧本】\n{courses_str}"
             )
         )
 
@@ -137,7 +137,7 @@ async def main(matrix: Matrix):
             )
             messages.append(
                 Message.new("moshi_overview").with_content(
-                    f"【当前课程】{course.title}\n"
+                    f"【当前剧本】{course.title}\n"
                     f"【表演纪律】{course.performance}\n"
                     f"【章节索引】\n{chapters_summary}\n"
                     f"\n{course.knowledge}"

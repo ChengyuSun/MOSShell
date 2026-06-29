@@ -23,10 +23,12 @@ from lark_channel import (
     OutboundText,
     SendOpts,
 )
+from pydantic import Field
 
 from ghoshell_moss.contracts.configs import ConfigType
 from ghoshell_moss.core.blueprint.channel_builder import new_channel
 from ghoshell_moss.core.blueprint.matrix import Matrix
+from ghoshell_moss.core.concepts.topic import TopicModel
 
 from lark_channel.api.contact.v3.model.get_user_request import GetUserRequest
 from lark_channel.channel.types import Identity as SDKIdentity
@@ -48,6 +50,24 @@ class FeishuConfig(ConfigType):
     @classmethod
     def conf_name(cls) -> str:
         return "feishu"
+
+
+class FeishuMessage(TopicModel):
+    """飞书 IM 消息。由 Feishu App 发布到 Zenoh Topic，任意消费者订阅。
+
+    与 layouts/courtroom.py 中的 FeishuMessage 定义一致，
+    在此独立复制以避免 Feishu App 依赖 Reflex 框架。
+    """
+    text: str = Field(default="", description="消息文本内容")
+    level: str = Field(default="text", description="text | emphasis | system")
+
+    @classmethod
+    def topic_type(cls) -> str:
+        return "feishu/message"
+
+    @classmethod
+    def default_topic_name(cls) -> str:
+        return "feishu/message"
 
 
 # ── Message Buffer ────────────────────────────────────────────────────────────
@@ -194,9 +214,12 @@ class AppState:
 
 _state = AppState()
 
+# chat_id → Zenoh Topic 路由集合。由 FEISHU_TOPIC_CHAT_IDS 环境变量驱动。
+_topic_chat_ids: set[str] = set()
 
 
-@channel.build.command()
+
+# @channel.build.command()
 async def send_stream(chat_id: str, chunks__, reply_to: str = "") -> str:
     """流式回复飞书消息。模型边生成边在飞书卡片中实时刷新，适合长回复。
     短回复（1-2句）请优先使用 send_message。文本放 CDATA 内避免转义问题。
@@ -236,13 +259,13 @@ async def send_stream(chat_id: str, chunks__, reply_to: str = "") -> str:
     return f"已流式回复到飞书 chat_id={chat_id} (msg_id={result.message_id})"
 
 
-@channel.build.command(always_observe=True)
+# @channel.build.command(always_observe=True)
 async def pull_messages(chat_id: str, limit: int = 20, before: str = "") -> list[dict]:
     """获取指定聊天更早的历史消息（当前新消息已自动展示在上下文中，通常无需调用此命令）。"""
     return _state.buffer.pull(chat_id, limit=limit, before=before or None)
 
 
-@channel.build.command()
+# @channel.build.command()
 async def send_message(chat_id: str, text__: str, reply_to: str = "") -> str:
     """在飞书中回复用户。收到消息后优先使用此命令回复。如设置了 reply_to 则内联回复该消息。
 
@@ -314,7 +337,7 @@ async def _feishu_context() -> list[str]:
         lines.append(
             f"  [{ctl}] {sender} | chat_id:{msg.chat_id} | msg_id:{msg.id}"
             f"\n    {msg.content_text}"
-            f'\n    → 回复: <apps.im_feishu:send_message chat_id="{msg.chat_id}" reply_to="{msg.id}">...</apps.im_feishu:send_message>'
+            # f'\n    → 回复: <apps.im_feishu:send_message chat_id="{msg.chat_id}" reply_to="{msg.id}">...</apps.im_feishu:send_message>'
         )
     result = ["\n".join(lines)]
     _state.logger.info(
@@ -326,13 +349,13 @@ async def _feishu_context() -> list[str]:
 
 @channel.build.instruction
 async def instruction() -> str:
-    return (
-        "飞书消息回复规则【强约束】：\n"
-        "1. 收到飞书消息后，必须通过 apps.im_feishu:send_message 或 apps.im_feishu:send_stream 回复用户\n"
-        "2. 短回复（1-2句）→ send_message；长回复或需要卡片格式 → send_stream\n"
-        "3. 直接从上下文中获取 chat_id 和 msg_id 作为参数，设置了 reply_to 则内联回复\n"
-        "4. **禁止仅在终端输出——你的回复必须送达飞书用户**"
-    )
+    return ""
+    # 飞书消息回复规则已禁用 — 当前模式下飞书消息仅供 Ghost 参考，无需回复。
+    # "飞书消息回复规则【强约束】：\n"
+    # "1. 收到飞书消息后，必须通过 apps.im_feishu:send_message 或 apps.im_feishu:send_stream 回复用户\n"
+    # "2. 短回复（1-2句）→ send_message；长回复或需要卡片格式 → send_stream\n"
+    # "3. 直接从上下文中获取 chat_id 和 msg_id 作为参数，设置了 reply_to 则内联回复\n"
+    # "4. **禁止仅在终端输出——你的回复必须送达飞书用户**"
 
 
 
@@ -374,7 +397,8 @@ async def _signal_consumer() -> None:
     """Consume InboundMessage from the janus cross-thread queue.
 
     Builds Signal body + description on the main loop and dispatches
-    to MOSS session.  This replaces the call_soon_threadsafe bridge.
+    to MOSS session.  Also routes matching chat messages to Zenoh Topic
+    for downstream consumers (e.g. courtroom danmaku).
     """
     while True:
         try:
@@ -387,7 +411,23 @@ async def _signal_consumer() -> None:
                 f"\n{msg.content_text}"
             )
             if _state.session:
-                _state.session.add_input_signal(signal_text, description=description)
+                _state.session.add_input_signal(signal_text, description=description, priority=-1)
+                # Topic routing: publish chat messages for downstream consumers.
+                # If FEISHU_TOPIC_CHAT_IDS is set, only matching chats go to topic.
+                # If empty (default), all messages go to topic — everyone is jury.
+                if not _topic_chat_ids or msg.chat_id in _topic_chat_ids:
+                    try:
+                        dm = FeishuMessage(
+                            text=f"{sender}：{msg.content_text}",
+                            level="text",
+                        )
+                        _state.session.topics.pub(dm)
+                        _state.logger.info(
+                            "TOPIC_PUB: chat_id=%s sender=%s text=%s",
+                            msg.chat_id, sender, msg.content_text[:40],
+                        )
+                    except Exception:
+                        _state.logger.exception("TOPIC_PUB_FAILED")
             _state.logger.info("Signal: %s", description[:120])
         except janus.QueueClosed:
             break
@@ -406,6 +446,16 @@ async def main(matrix: Matrix) -> None:
 
     # ── Start signal consumer (janus queue: SDK thread → main loop) ──
     consumer_task = asyncio.create_task(_signal_consumer())
+
+    # ── Topic routing config ──
+    # FEISHU_TOPIC_CHAT_IDS: comma-separated chat_id whitelist. Empty = all chats publish.
+    global _topic_chat_ids
+    raw = os.environ.get("FEISHU_TOPIC_CHAT_IDS", "")
+    _topic_chat_ids = {cid.strip() for cid in raw.split(",") if cid.strip()}
+    if _topic_chat_ids:
+        _state.logger.info("Topic routing: %d chat_ids whitelisted", len(_topic_chat_ids))
+    else:
+        _state.logger.info("Topic routing: all chats → feishu/message (jury mode)")
 
     # ── Load config (app-scoped via cell workspace, minecraft_bot pattern) ──
     # Config file lives at apps/im/feishu/configs/feishu.yml alongside source.

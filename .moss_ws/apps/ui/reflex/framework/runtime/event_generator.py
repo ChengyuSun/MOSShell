@@ -95,15 +95,21 @@ def generate_stream_command(name: str, state_class: type[rx.State], queue: async
     async def clear(state: state_class):  # type: ignore[valid-type]
         setattr(state, name, "")
 
+    async def set_(state: state_class, t: str):  # type: ignore[valid-type]
+        setattr(state, name, t)
+
     # 2. 动态修改函数名（符合 stream_{title} 格式）
     stream.__name__ = stream.__qualname__  = f"stream_{name}"
     clear.__name__ = clear.__qualname__ = f"clear_{name}"
+    set_.__name__ = set_.__qualname__ = f"set_{name}"
 
     # 3. 用 rx.event 装饰并返回
     stream_decorated = rx.event(stream)
     clear_decorated = rx.event(clear)
+    set_decorated = rx.event(set_)
     setattr(state_class,  f"stream_{name}", stream_decorated)
     setattr(state_class, f"clear_{name}", clear_decorated)
+    setattr(state_class, f"set_{name}", set_decorated)
 
     async def stream_command(chunks__):
         async for chunk in chunks__:
@@ -111,6 +117,9 @@ def generate_stream_command(name: str, state_class: type[rx.State], queue: async
 
     async def clear_command():
         await _await_event(queue, ClearEvent(field=name))
+
+    async def set_command(t: str):
+        await _await_event(queue, SetEvent(field=name, data=t))
 
     return [
         PyCommand(
@@ -121,8 +130,13 @@ def generate_stream_command(name: str, state_class: type[rx.State], queue: async
         PyCommand(
             func=clear_command,
             name=f"clear_{name}",
-            doc=f"清空{name}字段"
-        )
+            doc=f"清空{name}字段",
+        ),
+        PyCommand(
+            func=set_command,
+            name=f"set_{name}",
+            doc=f"直接设置{name}字段值",
+        ),
     ]
 
 
