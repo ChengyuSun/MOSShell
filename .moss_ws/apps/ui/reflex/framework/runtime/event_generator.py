@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import json
+import types
 import typing
 
 import pydantic
@@ -48,6 +49,12 @@ def build(state_name, state_class: type[rx.State], layout_state_class: type[rx.C
     annotations = state_class.__annotations__
     for name, type_ in annotations.items():
         ori_type = typing.get_origin(type_)
+        # 解包 Optional[T] / T | None → T，确保 Union 类型能命中后续匹配
+        if ori_type is types.UnionType:
+            args = [a for a in typing.get_args(type_) if a is not type(None)]
+            if len(args) == 1:
+                type_ = args[0]
+                ori_type = typing.get_origin(type_)
         if ori_type is list and typing.get_args(type_)[0] is VideoLocator:
             commands.extend(
                 generate_video_list_command(name, state_class, queue)

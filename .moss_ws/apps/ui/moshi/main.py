@@ -93,7 +93,7 @@ async def main(matrix: Matrix):
     channel = new_channel(
         name="moshi",
         description=(
-            "moshi导演app，通过剧本逐章推进表演。"
+            "moshi导演app，通过剧本逐章推进表演。必须用户命令后才能加载课程，禁止自动加载。"
         ),
     )
 
@@ -155,29 +155,16 @@ async def main(matrix: Matrix):
                 )
 
         # ═══ Layer 3: 当前章节 — 进入章节后可见 ═══
+        # 不注入推进指令——推进方式（next_chapter / jump_chapter）由剧本自行决定。
         if course and current_id:
             chap = course.chapters[current_id]
-            # 章节推进指令
-            idx = course.ordered_ids.index(current_id)
-            if idx + 1 < len(course.ordered_ids):
-                next_id = course.ordered_ids[idx + 1]
-                next_chap = course.chapters[next_id]
-                directive = (
-                    f"【指令】当前在第{chap.order}章。完成表演后，"
-                    f"调用 <apps.ui_moshi:next_chapter /> 进入"
-                    f"第{next_chap.order}章「{next_chap.title}」。"
-                )
-            else:
-                directive = "【指令】当前在最后一章。完成表演后收束谢幕。"
-
             messages.append(
                 Message.new("moshi_chapter").with_content(
                     f"第{chap.order}章「{chap.title}」（{chap.id}）\n"
                     f"主题：{chap.theme}\n"
                     f"建议布局：{chap.suggested_layout}\n"
                     f"时长：{chap.duration}\n"
-                    f"\n{chap.content}\n"
-                    f"\n{directive}"
+                    f"\n{chap.content}"
                 )
             )
 
@@ -220,8 +207,7 @@ async def main(matrix: Matrix):
         chap = course.chapters[current_id]
         return Observe.new(
             f"进入第{chap.order}章「{chap.title}」\n"
-            f"布局：{chap.suggested_layout} | 时长：{chap.duration}\n"
-            f"立即按剧本开始表演。"
+            f"布局：{chap.suggested_layout} | 时长：{chap.duration}"
         )
 
     @channel.build.command()
@@ -237,8 +223,7 @@ async def main(matrix: Matrix):
         chap = course.chapters[id]
         return Observe.new(
             f"跳转到第{chap.order}章「{chap.title}」\n"
-            f"布局：{chap.suggested_layout} | 时长：{chap.duration}\n"
-            f"立即按剧本开始表演。"
+            f"布局：{chap.suggested_layout} | 时长：{chap.duration}"
         )
 
     await matrix.provide_channel(channel)
