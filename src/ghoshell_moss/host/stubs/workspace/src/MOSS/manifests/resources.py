@@ -11,8 +11,10 @@
 # 发现路径：MOSS.manifests.resources
 # 深入：moss howtos read host-dev/add-a-resource-storage.md
 
+from ghoshell_moss.core.resources.local_audio import LocalAudioResourceMeta
 from ghoshell_moss.core.resources.local_image import LocalImageResourceMeta
 from ghoshell_moss.core.resources.local_video import LocalVideoResourceMeta
 
+local_audio_storage_meta = LocalAudioResourceMeta()
 local_image_storage_meta = LocalImageResourceMeta()
 local_video_storage_meta = LocalVideoResourceMeta()

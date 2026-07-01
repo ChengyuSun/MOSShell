@@ -137,11 +137,12 @@ SYNC_SCRIPT = f"""
   var store=document.getElementById('peach-store');
   if(!store){{setTimeout(init,80);return;}}
   var MOODS={mood_js_config()};
-  var POSITIONS={{{{center:{{x:0.50,y:0.45}},stream_left:{{x:0.28,y:0.55}},forest_edge:{{x:0.35,y:0.48}},cave_entrance:{{x:0.50,y:0.52}},village_center:{{x:0.50,y:0.40}}}}}};
-  var lastMood='',lastPos='center',lastTrans='',firstRun=true;
+  var POSITIONS={{center:{{x:0.50,y:0.45}},stream_left:{{x:0.28,y:0.55}},forest_edge:{{x:0.35,y:0.48}},cave_entrance:{{x:0.50,y:0.52}},village_center:{{x:0.50,y:0.40}}}};
+  var lastMood='',lastPos='center',lastGesture='',lastTrans='',firstRun=true;
   function sync(){{
     var mood=store.getAttribute('data-atmosphere')||'';
     var pos=store.getAttribute('data-sigil-position')||'center';
+    var gesture=store.getAttribute('data-sigil-gesture')||'';
     var trans=store.getAttribute('data-transition')||'';
     var dirty=false;
 
@@ -164,6 +165,11 @@ SYNC_SCRIPT = f"""
       window.__PEACH_SIGIL_CONFIG__=sigil;
     }}
 
+    if(gesture!==lastGesture||firstRun){{
+      lastGesture=gesture;
+      window.__peachSetGesture&&window.__peachSetGesture(!!gesture);
+    }}
+
     if(trans!==lastTrans){{
       lastTrans=trans;
       if(trans==='constrict'){{
@@ -177,7 +183,7 @@ SYNC_SCRIPT = f"""
     if(!dirty)return;
   }}
   sync();
-  new MutationObserver(sync).observe(store,{{attributes:true,attributeFilter:['data-atmosphere','data-sigil-position','data-transition']}});
+  new MutationObserver(sync).observe(store,{{attributes:true,attributeFilter:['data-atmosphere','data-sigil-position','data-sigil-gesture','data-transition']}});
 }})();
 """
 
@@ -524,11 +530,11 @@ PEACH_CSS = """
 
 /* HUD (z-50) */
 .peach-hud{position:absolute;top:0;left:0;right:0;z-index:10;
-  display:flex;justify-content:space-between;align-items:flex-start;padding:24px 32px;pointer-events:none;}
-.peach-chapter-title{font-size:0.95rem;color:rgba(240,232,200,0.5);letter-spacing:0.12em;font-weight:400;transition:opacity 0.8s ease;}
-.peach-progress{display:flex;align-items:center;gap:6px;}
-.peach-progress-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.1);transition:all 0.5s ease;}
+  display:flex;justify-content:space-between;align-items:flex-start;padding:28px 40px;pointer-events:none;}
+.peach-chapter-title{font-size:1.3rem;color:rgba(240,232,200,0.7);letter-spacing:0.12em;font-weight:400;transition:opacity 0.8s ease;}
+.peach-progress{display:flex;align-items:center;gap:8px;}
+.peach-progress-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.1);transition:all 0.5s ease;}
 .peach-progress-dot.done{background:rgba(255,255,255,0.25);}
-.peach-progress-dot.active{background:rgba(255,240,200,0.8);box-shadow:0 0 10px rgba(255,240,200,0.4);width:8px;height:8px;}
-.peach-progress-line{width:20px;height:1px;background:rgba(255,255,255,0.06);}
+.peach-progress-dot.active{background:rgba(255,240,200,0.8);box-shadow:0 0 12px rgba(255,240,200,0.4);width:12px;height:12px;}
+.peach-progress-line{width:28px;height:1.5px;background:rgba(255,255,255,0.08);}
 """

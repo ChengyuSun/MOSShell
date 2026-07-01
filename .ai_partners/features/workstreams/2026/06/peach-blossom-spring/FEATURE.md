@@ -7,9 +7,9 @@ description: 基于 moshi 导演体系的第三门课程。以《桃花源记》
 milestone: null
 priority: P1
 status: in-progress
-status_note: Phase 1-3 ✅。Phase 4 进行中：背景图可见 ✅、隧道过渡 v3 ✅、tense 氛围重做 ✅。Canvas 动画（光灵+粒子）待验证（SYNC_SCRIPT arguments.callee 已修）。端到端 6 章待跑通。
+status_note: Phase 1-3 ✅。Phase 4 进行中：背景图可见 ✅、隧道过渡 v3 ✅、tense 氛围重做 ✅。Canvas 动画验证通过 ✅。bug修复：SYNC_SCRIPT f-string转义+gesture桥接 ✅。6章剧本重构 ✅。音频5轨入库 ✅。CTML前缀全量修正 ✅。剧本v2 ✅。素材清单 ✅。22张新浮层素材入库 ✅。剧本↔JSONL交叉校验 ✅。.meta.md YAML frontmatter修复 ✅。连续讲完修复 ✅（rhythm/continuity重写+恢复纪律+去blockquote）。背景图章首展示 ✅（6章bg移至锚点1，Ch04除外）。浮层双图 ✅（5章多图并排，删除"粒子/两张图"等元描述）。HUD放大 ✅（标题0.95→1.3rem，进度点6→10px）。⬜ 前端dispatch-is-not-a-function（.web缓存已清，待重启验证）。⬜ SIGIL_SCRIPT Reflex DOM输出。⬜ 光缝删除+替代动效（待人类确认方案）。⬜ 端到端集成测试。⬜ 交互打断/jump_chapter测试。
 title: 桃花源记 — 连续动画引擎驱动的流式叙事演示
-updated: '2026-06-30T15:00'
+updated: '2026-07-01T15:30'
 ---
 
 # 桃花源记
@@ -527,22 +527,19 @@ moshi 的 `next_chapter` 推进章节，Ghost 在章节首自行调用 `set_chap
 
 ### Phase 4: 课程剧本 + 端到端 + 音频
 
-18. 编写 `.meta.md` — interaction: teacher 模式 + 课程概况，复用
-    `context_messages` Layer 2 管道
-19. 编写 6 章剧本 — YAML frontmatter + 知识锚点表 + 口播锚点 + 建议 CTML 序列。
-    Ghost 照口播锚点即兴展开，按 Decision 16 时序控制粒子/背景交替
-20. **补全 TEST_CTML.md** — 已有章节讲解骨架和布局切换 CTML，需补入：
-    - 每章 `set_background_image locator="pil-image://workspace-assets/peach/..."`（8 张占位图已就绪）
-    - 浮层 `append_overlay_images` / `pop_overlay_images`（callig1/callig2）
-    - 音频 `apps.tools_audio_player:play/stop`（3 段占位 wav 已就绪）
-    - 占位素材位置：`.moss_ws/apps/assets/pil-images/` + `.moss_ws/apps/assets/audios/`
-21. 素材准备 — 山水画/书法贴图/视频/背景音乐，由人类工程师统一收集后
-    替换占位素材（locator 不变，替换文件即可）
-22. 音频集成 — Ghost 通过 `<apps.tools_audio_player:play />` 控制背景音乐，
-    布局零改动
-23. 端到端集成 — Ghost + moshi 导演 + peach_blossom_stage，完整 6 章跑通
-24. 交互测试 — 验证打断提问（知识锚点回答后继续）、jump_chapter 回退重播、
-    章间 crossfade 过渡、Ch03→Ch04 三段式爆炸
+18. ✅ `.meta.md` — 全局表演纪律（"一句一动"铁律、章尾 next_chapter 铁律、音频铁律、禁止事项）+ 命令速查 + 音频资源表
+19. ✅ 6 章剧本重构 — "一句一动"折中方案：
+    - 保留知识锚点（Ghost 回答提问的知识库）
+    - 口播锚点每句配 CTML 动作提示（非精确脚本，Ghost 仍有即兴空间）
+    - 每章轻量「表演约束」：Ch01 强制 switch_layout 第一步、Ch04 高潮时序铁律（先音频→再过渡→说"豁然开朗"）、章尾强制 next_chapter（Ch06 除外）
+    - 全部 CTML 命令使用完整前缀（`apps.ui_reflex:`/`apps.tools_audio_player:`/`apps.ui_moshi:`）
+20. ✅ TEST_CTML.md — 6 章 CTML 剧本（7 图 + 章节推进），素材已注册 pil-image.jsonl
+21. ✅ 音频 5 轨已入库 — serenity/enchanted/tense/release/tranquil
+    - 发现 AI 生成的 .mp3 实为 AAC-in-MP4，afplay 按扩展名解码失败 → 改名 .m4a + 更新 JSONL 修复
+    - locator 格式：`local-audio://workspace-assets/serenity.m4a`
+22. ⬜ 素材替换 — 7 张占位图 + 5 轨音频待人类工程师替换正式素材
+23. ⬜ 端到端集成 — Ghost + moshi + peach_blossom_stage，完整 6 章跑通（首次测试发现三个问题：不自动推进、大段文字、光灵不可见。前两个已通过剧本重构+约束修复，第三个调试中）
+24. ⬜ 交互测试 — 验证打断提问（知识锚点回答后继续）、jump_chapter 回退重播
 
 ### Phase 4 首次端到端测试 — 2026-06-30 调试记录
 
@@ -642,53 +639,32 @@ v3（当前版本）：
 
 6. **氛围设计的叙事对齐**：tense mood 的 vignette 透明中心大小直接决定了"远处光点有多远"——3% 是极远的小光点，18% 只是普通暗角。设计 mood 参数时需要代入叙事场景（"山有小口，仿佛若有光" → 极小光点）。
 
-### 2026-06-30 调试记录 (deepseek-v4-pro, 第二轮) — Reflex↔Canvas 桥接断裂
+### 2026-06-30 修复记录 (deepseek-v4-pro, 第二轮) — Canvas 桥接修复
 
-**Bug 6 — CTML set_atmosphere 只改变 CSS 光晕，粒子不变；set_sigil_position 完全不移动光灵**
+**Bug 6 — SYNC_SCRIPT f-string 转义错误导致整段 JS 被浏览器拒绝执行（verified ✅）**
 
 - 症状：
-  - `<set_atmosphere released/>`：CSS 光晕（peach-glow, peach-grade, peach-vignette）正确变色，但粒子仍为初始 water 态，光灵颜色/呼吸未联动
-  - `<set_sigil_position stream_left/>`：光灵位置不动
-  - 静态 HTML 测试页完全正常 → Canvas 渲染代码正确，断点在 Reflex → Canvas 桥接
-- 已排除：
-  - 事件管线：CSS 能变说明 `moss_listener → Reflex State → DOM 重渲染` 全线通畅
-  - Canvas 动画循环：静态 HTML 中粒子/光灵/位置切换均正常
-  - `arguments.callee`：已在第一轮修复，不是本次原因
-- 当前焦点：**Reflex 重渲染时 `#peach-store` 的 `data-*` 属性是否被正确更新？MutationObserver 是否触发？**
+  - `<set_atmosphere released/>`：CSS 光晕正确变色，粒子不变；光灵位置/手势无响应
+  - 静态 HTML test page 正常 → Canvas 渲染逻辑无问题
+  - Console：`window.__PEACH_PARTICLE_CONFIG__` 和 `window.__PEACH_SIGIL_CONFIG__` 均为 `undefined`
+  - Console 红色报错：`Uncaught SyntaxError: Failed to execute 'appendChild' on 'Node': Unexpected token '{'`
+- 根因：`peach_assets.py` SYNC_SCRIPT 是 Python f-string，POSITIONS 变量用了 4 层大括号 `{{{{...}}}}`，f-string 转义后产生 `{{...}}`（双层）而非 `{...}`（单层）。浏览器解析 `<script>` 时遇到 `var POSITIONS = {{...}}` → 语法错误，拒绝执行整个脚本标签 → `window.__PEACH_*__` 永不写入
+- 为何 PARTICLE_SCRIPT/SIGIL_SCRIPT 仍能渲染：它们有独立的硬编码默认值，不依赖 `window.__PEACH_*__`。但仅使用默认值，无法响应 CTML 更新
+- 为何 CSS 能变：CSS class 由 Reflex 直接管理，不走 SYNC_SCRIPT
+- 修复：`{{{{...}}}}` → `{{...}}`（4层→2层），f-string 转义后正确产生单层 `{...}`
+- 教训：
+  7. **f-string 中的 JS 对象字面量**：`{{` 在 Python f-string 中产生一个字面 `{`。要生成 `var x = {a:1}`，Python 源码需写 `var x = {{a:1}}`。多加一层 `{{{{` 会产生 `{{`，导致 JS 语法错误
+  8. **`window.__PEACH_*__` 为 `undefined` 意味 SYNC_SCRIPT 未执行**：直接搜 Console 报错，不需要猜 DOM/Reflex
 
-**踩坑：setInterval 轮询方案失败**
+**Bug 7 — 光束手势 CTML 无反应（verified ✅）**
 
-尝试将 MutationObserver 替换为 `setInterval(sync, 120)` + 每次重新 `getElementById`，结果光灵完全消失。根因未及细查（用户要求回退），但说明原始的 `setTimeout(init,80)` + MutationObserver 初始化流程是光灵渲染的必要条件，不可随意替换。
-
-**待验证假设（按可能性排序）**：
-
-1. **Reflex 不更新 `data-*` 属性**：`class_name` 走 React className patching，`data-*` 可能走不同代码路径。如果 Reflex 在重渲染时不把 `data-atmosphere` 的新值写入 DOM，MutationObserver 永不触发。
-
-2. **React reconciliation 替换了 `#peach-store` 元素**：CSS class 更新在 DIFFERENT 元素上（peach-glow, peach-grade），这些元素正常 patch。`#peach-store` 可能因 `rx.cond` 子树变化被连带重建。MutationObserver 随旧元素一起销毁。
-
-3. **`mood` Var 的计算链导致 `data_atmosphere` 未进入 Reflex 的 dirty tracking**：`mood = _safe_mood(cls.atmosphere)` 是 `rx.cond` 链。CSS 通过 `class_name=f"peach-glow {mood}"` 使用同样的 `mood` 能更新，但 `data_atmosphere=mood` 语法可能被 Reflex 特殊处理。
-
-**备选方案：CSS 自定义属性桥接**
-
-不用 `data-*` 属性，改用根元素的 `style` 中注入 `--peach-mood`, `--peach-pos`, `--peach-trans` CSS 变量。React 的 `style` 更新路径已经与 `class_name` 更新路径同样是成熟的 React reconciliation 路径。SYNC_SCRIPT 通过 `getComputedStyle` 轮询读取，不依赖 MutationObserver。
-
-```python
-# peach_blossom_stage.py — 根 rx.box 上加 style
-style={
-    "--peach-mood": mood,
-    "--peach-pos": cls.sigil_position,
-    "--peach-trans": cls.transition,
-}
-```
-
-```javascript
-// SYNC_SCRIPT — getComputedStyle 读取
-var el = document.getElementById('peach-root');
-var s = getComputedStyle(el);
-var mood = s.getPropertyValue('--peach-mood').trim() || 'serene';
-```
-
-优势：走已验证的 React style 更新路径；`getComputedStyle` 始终读当前值无需 observer；免疫 DOM 元素替换。
+- 症状：`set_sigil_gesture`/`clear_sigil_gesture` CTML 不产生光束
+- 根因：
+  1. `peach_blossom_stage.py` 的 `peach-store` div 缺少 `data_sigil_gesture` 属性 → 手势状态未传入 DOM
+  2. SYNC_SCRIPT 未读取 `data-sigil-gesture` → `window.__peachSetGesture()` 从未被调用
+- 修复：
+  1. `peach_blossom_stage.py`：`peach-store` 新增 `data_sigil_gesture=cls.sigil_gesture`
+  2. `peach_assets.py`：SYNC_SCRIPT 新增 gesture 读取 + `window.__peachSetGesture(!!gesture)` 调用 + MutationObserver 监听 `data-sigil-gesture`
 
 ---
 
@@ -697,13 +673,13 @@ var mood = s.getPropertyValue('--peach-mood').trim() || 'serene';
 | 文件 | 改动 | 状态 |
 |---|---|---|
 | `layouts/peach_blossom_stage.py` | 新增布局 — 五层舞台 + ComponentState | ✅ |
-| `components/peach_assets.py` | 新增 — mood 配置 + JS 脚本 + CSS（含过渡 v3 + tense v2） | ✅ |
+| `components/peach_assets.py` | 新增 — mood 配置 + JS 脚本 + CSS（含过渡 v3 + tense v2）。修复：f-string 转义 + gesture 桥接 | ✅ |
 | `components/peach_test.html` | 新增 — 独立测试页 (6 mood + 5 position) | ✅ |
 | `framework/runtime/event_generator.py` | 无需改动 — 13 字段全为已支持类型 | ✅ |
 | `config.show_moshi.yaml` | 注册 peach_blossom_stage | ✅ |
 | `assets/moshi_courses/桃花源记/TEST_CTML.md` | 测试剧本（7 图 + 音频占位） | 🔄 端到端待跑 |
-| `assets/moshi_courses/桃花源记/.meta.md` | 课程元信息（interaction: teacher） | ⬜ |
-| `apps/assets/pil-images/` | 8 张占位图（peach/stream~return + callig1/2） | ⬜ 待替换正式素材 |
+| `assets/moshi_courses/桃花源记/.meta.md` | 课程元信息（interaction: teacher） | ✅ |
+| `apps/assets/pil-images/` | 7 张占位图（stream/forest/cave/village/return + callig_narrow/open）已注册 pil-image.jsonl | ⬜ 待替换正式素材 |
 | `apps/assets/audios/` | 3 段占位 wav | ⬜ 待替换正式 BGM |
 
 不改 `moshi/main.py`。不改现有 11 个布局。13 字段全部自动生成命令。
@@ -725,3 +701,88 @@ moshi (导演体系)
 ---
 
 *Created: 2026-06-29. Based on discussion with human engineer.*
+
+---
+
+### 2026-07-01 排查记录 (deepseek-v4-pro) — SIGIL_SCRIPT 未被 Reflex 输出
+
+**环境**：Reflex dev 模式，show_moshi mode，peach_blossom_stage 布局已通过 CTML switch_layout 激活。
+
+**验证通过的部分**：
+
+- CSS 层面正常：`<set_atmosphere tense/>` 后 vignette 收缩为 3% 光点、grade 变暗、CSS transition 联动
+- 粒子 Canvas 正常：`#peach-particles` 尺寸 [898, 716]（`R()` 已执行），`window.__PEACH_PARTICLE_CONFIG__` 有值，三种粒子态切换联动
+- SYNC_SCRIPT 正常：`window.__PEACH_PARTICLE_CONFIG__` 和 `window.__PEACH_SIGIL_CONFIG__` 均已写入，mood/position 切换后属性正确联动
+
+**定位到的根因**：
+
+SIGIL_SCRIPT 整个 `<script>` 标签未出现在 DOM 中：
+- `window.__peachSetGesture === undefined`（该函数由 SIGIL_SCRIPT 定义）
+- `#peach-sigil` Canvas 存在于 DOM 但尺寸为 [300, 150]（HTML5 默认值，SIGIL_SCRIPT 的 `R()` 未执行）
+- Elements 面板搜索 `peachSetGesture` 无结果
+- `document.scripts` 只有 3 个框架注入脚本，无我们的
+
+同为 `rx.script()` 注入，PARTICLE_SCRIPT（4735 字节）正常输出到 DOM，SIGIL_SCRIPT（4756 字节）被 Reflex 静默丢弃。Python 侧已验证两者均为有效非空字符串。
+
+**排查方向**：
+1. react-helmet 对无 `id`/`key` 属性的同标签去重（三个 `<script>` 标签无区分属性）
+2. SIGIL_SCRIPT 内容触发了 Reflex/Next.js 的某种过滤
+3. 字符编码问题（SIGIL_SCRIPT 含 U+2192 →、U+2014 — 等 Unicode 字符）
+
+**下一步**：给三个 `rx.script()` 加唯一 `id` 属性排除 helmet 去重假设。
+
+---
+
+### 2026-07-01 剧本v2 + 素材体系 (deepseek-v4-pro)
+
+**背景**：人类工程师反馈两个方向性问题：
+1. 剧本节奏不对——应该是视觉先行、口播在后，符合观众"先看到再听解释"的认知习惯
+2. 浮层严重利用不足——6章只用2张书法，且现有书法丑
+
+**剧本修订**：
+
+核心原则：
+1. **CTML 全部前置** — 每轮先出 CTML 动作，再口播。旧格式 `> 口播 → CTML` 翻转为 `> → CTML > 口播`
+2. **"不加动作"全部消灭** — Ch05 最严重（4处），每处改为浮层插入/切换
+3. **浮层密度暴增** — 从全6章 2 次浮层操作 → 42 次（Ch01:4、Ch02:7、Ch03:6、Ch04:6、Ch05:12、Ch06:7）
+4. **章首视觉冲击** — 每章第一轮就让观众看到变化，再开口
+
+保持不变的约束：Ch01 switch_layout 铁律、Ch04 高潮时序铁律（Step 1-6）、Ch06 静默收场。
+
+**素材体系**：
+
+创建素材需求清单 `.moss_ws/apps/ui/moshi/peach_blossom_materials.md`：
+- 每章逐项列出所需素材：标识符、类型、内容描述、风格要求、中英文AI提示词
+- 总计 29-32 件：6 背景图 + 8 书法浮层 + 15 场景浮层 + 可选视频
+- 风格统一要点：全部暗底、发光感、宋人山水/工笔基底、人物存在感极弱、色调沿情绪弧线演进
+
+**素材入库**：人类工程师上传 22 张新浮层素材，全部注册入 pil-image.jsonl（line 52-73）。
+
+**交叉校验**：剧本 locator 引用 ↔ JSONL path 逐条校对，27/27 全部对齐。旧版 `callig_narrow.png`/`callig_open.png`（JSONL line 45-46）已被 `overlay_` 前缀版本替代。
+
+**当前状态**：剧本和素材就绪，等待 SIGIL_SCRIPT 修复后跑端到端集成测试。
+
+---
+
+### 2026-07-01 排查记录 (deepseek-v4-pro) — moshi 窗口闪退 + 白屏
+
+**Bug 8 — `.meta.md` YAML frontmatter 解析崩溃（修复 verified ✅）**
+
+- 症状：`uv run python main.py` 直接崩溃，窗口闪退
+- Traceback：`yaml.scanner.ScannerError: while scanning a simple key ... could not find expected ':'`
+- 链：`main.py` → `_get_course_storage()` → `storage.scan()` → `_scan_course()` → `_split_frontmatter()` → `yaml.safe_load(parts[1])`
+- 根因：`.meta.md` 的两个 `---` fence 之间混入了 Markdown 格式的表演规则（`# 全局表演纪律`、`## 节奏铁律`、`1. **一句一动。**` 等），`yaml.safe_load` 将这些 Markdown 行当成 YAML mapping key 解析，遇到 `1. **一句一动。**` 找不到 `:` 分隔符抛异常
+- 为何之前没发现：FEATURE.md 的 Decision 6 声明了 interaction 放 `.meta.md`，但这些规则是后来逐步加进去的，写内容时没意识到它们落在了 frontmatter fence 内
+- 修复：将第二个 `---` 从第 53 行上移到第 26 行（`audio_available: true` 之后），使 Markdown 规则留在 body 部分
+- 教训：
+  9. **`.meta.md` 的 fence 位置**：`---` 之后、第二个 `---` 之前的所有内容必须是合法 YAML。写上 Markdown 内容前先确认 fence 已关闭
+  10. **`_split_frontmatter` 是脆弱的**：`text.split("---", 2)` 对 fence 内嵌 `---` 的场景无防护。长期应加固（加 YAML 解析错误时的明确告警，而非静默崩）
+
+**Bug 9 — 前端白屏：`dispatch is not a function`（待清缓存重启验证 ⬜）**
+
+- 症状：moshi 窗口打开后白屏，左上角黑字 "default"。即使 Ghost 连接并切换布局，始终白屏
+- 前端 Console：`TypeError: dispatch is not a function` at `state.js:647:27`
+- 分析：Reflex 状态管理的核心 `dispatch` 函数未定义，WebSocket 连接正常但 state 变更无法传播到 React 组件。`rx.match(State.layout, ...)` 获取不到有效的 layout 值 → 始终 fallback 到 `rx.text("default")`
+- 推测根因：新增 `PeachBlossomState`（13 字段，含 `Image.Image | None` 联合类型 + `list[Image.Image]`）后，前端的 `.web/` 编译缓存中 state schema 与新的 Python state 结构不兼容
+- 修复方向：删除 `.web/` 缓存目录，重启 Reflex 强制重新编译前端
+- 备注：`.web/` 已清，待人类工程师重新 `uv run reflex run` 验证

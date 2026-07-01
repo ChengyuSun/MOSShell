@@ -120,6 +120,7 @@ class PeachBlossomState(rx.ComponentState, NameMixin):
             rx.el.div(id="peach-store",
                       data_atmosphere=mood,
                       data_sigil_position=cls.sigil_position,
+                      data_sigil_gesture=cls.sigil_gesture,
                       data_transition=cls.transition,
                       hidden=True),
 
