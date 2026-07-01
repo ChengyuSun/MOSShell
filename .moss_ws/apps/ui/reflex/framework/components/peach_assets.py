@@ -198,30 +198,45 @@ PARTICLE_SCRIPT = r"""
   var pool=[];
 
   function P(){
+    this.bursting=false; // true only during one-shot burst window
     this.reset=function(mode){
       if(mode==='petal'){
         this.x=Math.random()*W; this.y=-20-Math.random()*H*0.5;
         this.sway=Math.random()*6.28; this.swaySp=0.015+Math.random()*0.025;
         this.fallSp=0.5+Math.random()*0.6; this.size=1.5+Math.random()*2.5;
+        this.bursting=false;
       }else if(mode==='gold_burst'){
-        var a=Math.random()*6.28,sp=CFG.speed*(1.5+Math.random()*3.5);
-        this.vx=Math.cos(a)*sp; this.vy=Math.sin(a)*sp;
-        this.x=W*0.5; this.y=H*0.5; this.life=1.0; this.size=2+Math.random()*4;
+        var burstStart=window.__PEACH_BURST_START__||0;
+        var burstAge=(performance.now()-burstStart)/1000;
+        if(burstStart&&burstAge>3.5){
+          // Post-burst: gentle gold floaters — no more explosions
+          this.x=Math.random()*W; this.y=Math.random()*H;
+          this.wave=Math.random()*6.28; this.waveSp=0.008+Math.random()*0.015;
+          this.driftSp=0.15+Math.random()*0.35; this.size=1+Math.random()*2;
+          this.life=0.3+Math.random()*0.4; this.bursting=false;
+        }else{
+          var a=Math.random()*6.28,sp=CFG.speed*(1.5+Math.random()*3.5);
+          this.vx=Math.cos(a)*sp; this.vy=Math.sin(a)*sp;
+          this.x=W*0.5; this.y=H*0.5; this.life=1.0; this.size=2+Math.random()*4;
+          this.bursting=true;
+        }
       }else{
         this.x=Math.random()*W; this.y=Math.random()*H;
         this.wave=Math.random()*6.28; this.waveSp=0.01+Math.random()*0.02;
         this.driftSp=0.3+Math.random()*0.5; this.size=0.8+Math.random()*2.2;
+        this.bursting=false;
       }
       this.phase=Math.random()*6.28;
     };
     this.update=function(){
       var trP=window.__PEACH_TR_PHASE__||0;
       var trPr=window.__PEACH_TR_PROGRESS__||0;
-      // Phase 3: force-reset old particles to gold_burst from center
-      if(trP===3&&trPr>0.05&&Math.random()<0.12){
+      // Phase 3: force non-bursting particles into gold_burst from center
+      if(trP===3&&trPr>0.05&&!this.bursting&&Math.random()<0.12){
         var a=Math.random()*6.28,sp=CFG.speed*(2+Math.random()*4);
         this.vx=Math.cos(a)*sp;this.vy=Math.sin(a)*sp;
         this.x=W*0.5;this.y=H*0.45;this.life=1.0;this.size=2+Math.random()*5;
+        this.bursting=true;
         return;
       }
       if(CFG.type==='petal'){
@@ -230,9 +245,18 @@ PARTICLE_SCRIPT = r"""
         if(this.y>H+40){this.y=-20;this.x=Math.random()*W;this.sway=Math.random()*6.28;}
         if(this.x<-40)this.x=W+40;if(this.x>W+40)this.x=-40;
       }else if(CFG.type==='gold_burst'){
-        this.vx*=0.97;this.vy*=0.97;this.x+=this.vx*CFG.speed;this.y+=this.vy*CFG.speed;
-        this.life-=0.003;
-        if(this.life<=0||this.x<-80||this.x>W+80||this.y<-80||this.y>H+80)this.reset('gold_burst');
+        if(this.bursting){
+          this.vx*=0.97;this.vy*=0.97;this.x+=this.vx*CFG.speed;this.y+=this.vy*CFG.speed;
+          this.life-=0.003;
+          if(this.life<=0||this.x<-80||this.x>W+80||this.y<-80||this.y>H+80)this.reset('gold_burst');
+        }else{
+          // Post-burst gentle drift — gold floaters that never re-explode
+          this.x+=CFG.speed*this.driftSp*0.4; this.wave+=this.waveSp;
+          this.y+=Math.sin(this.wave)*0.25;
+          this.life-=0.0008;
+          if(this.life<=0||this.x>W+40){this.x=-20;this.y=Math.random()*H;this.life=0.3+Math.random()*0.4;}
+          if(this.y<-40)this.y=H+40;if(this.y>H+40)this.y=-40;
+        }
       }else{
         this.x+=CFG.speed*this.driftSp;this.wave+=this.waveSp;
         this.y+=Math.sin(this.wave)*0.3;
@@ -249,10 +273,15 @@ PARTICLE_SCRIPT = r"""
     this.draw=function(t){
       var trP=window.__PEACH_TR_PHASE__||0;
       var tw=0.6+0.4*Math.sin(t*0.0004+this.phase);
-      var alpha=CFG.type==='gold_burst'?Math.max(0,this.life)*tw*1.5:tw;
+      var alpha;
+      if(CFG.type==='gold_burst'){
+        alpha=this.bursting?Math.max(0,this.life)*tw*1.5:Math.max(0,this.life)*tw*0.7;
+      }else{
+        alpha=tw;
+      }
       if(trP===2){alpha*=0.1;} // Critical: near total darkness
       else if(trP===1){alpha*=0.3+0.7*(1-(window.__PEACH_TR_PROGRESS__||0));} // Fade during constrict
-      var sz=CFG.type==='gold_burst'?this.size*this.life:this.size;
+      var sz=CFG.type==='gold_burst'?(this.bursting?this.size*this.life:this.size):this.size;
       var col=CFG.colors[Math.floor(Math.abs(Math.sin(this.phase*3.7))*CFG.colors.length)%CFG.colors.length];
       var m=col.match(/[\d.]+/g);
       if(m&&m.length>=4){
@@ -267,7 +296,11 @@ PARTICLE_SCRIPT = r"""
   var lastType=CFG.type,lastCount=CFG.count;
   function sync(){
     var g=window.__PEACH_PARTICLE_CONFIG__;if(!g)return;
-    if(g.type&&g.type!==lastType){lastType=g.type;CFG.type=g.type;for(var i=0;i<pool.length;i++)pool[i].reset(g.type);}
+    if(g.type&&g.type!==lastType){
+      lastType=g.type;CFG.type=g.type;
+      if(g.type==='gold_burst'){window.__PEACH_BURST_START__=performance.now();}
+      for(var i=0;i<pool.length;i++)pool[i].reset(g.type);
+    }
     if(g.count&&g.count!==lastCount){lastCount=g.count;CFG.count=g.count;ensurePool(g.count);}
     if(g.colors)CFG.colors=g.colors;
     if(g.speed!==undefined)CFG.speed=g.speed;

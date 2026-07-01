@@ -7,9 +7,9 @@ description: 基于 moshi 导演体系的第三门课程。以《桃花源记》
 milestone: null
 priority: P1
 status: in-progress
-status_note: Phase 1-3 ✅。Phase 4 进行中：背景图可见 ✅、隧道过渡 v3 ✅、tense 氛围重做 ✅。Canvas 动画验证通过 ✅。bug修复：SYNC_SCRIPT f-string转义+gesture桥接 ✅。6章剧本重构 ✅。音频5轨入库 ✅。CTML前缀全量修正 ✅。剧本v2 ✅。素材清单 ✅。22张新浮层素材入库 ✅。剧本↔JSONL交叉校验 ✅。.meta.md YAML frontmatter修复 ✅。连续讲完修复 ✅（rhythm/continuity重写+恢复纪律+去blockquote）。背景图章首展示 ✅（6章bg移至锚点1，Ch04除外）。浮层双图 ✅（5章多图并排，删除"粒子/两张图"等元描述）。HUD放大 ✅（标题0.95→1.3rem，进度点6→10px）。⬜ 前端dispatch-is-not-a-function（.web缓存已清，待重启验证）。⬜ SIGIL_SCRIPT Reflex DOM输出。⬜ 光缝删除+替代动效（待人类确认方案）。⬜ 端到端集成测试。⬜ 交互打断/jump_chapter测试。
+status_note: Phase 1-3 ✅。Phase 4 进行中：背景图可见 ✅、隧道过渡 v3 ✅、tense 氛围重做 ✅。Canvas 动画验证通过 ✅。bug修复：SYNC_SCRIPT f-string转义+gesture桥接 ✅。6章剧本重构 ✅。音频5轨入库 ✅。CTML前缀全量修正 ✅。剧本v2 ✅。素材清单 ✅。22张新浮层素材入库 ✅。剧本↔JSONL交叉校验 ✅。.meta.md YAML frontmatter修复 ✅。连续讲完修复 ✅（rhythm/continuity重写+恢复纪律+去blockquote）。背景图章首展示 ✅（6章bg移至锚点1，Ch04除外）。浮层双图 ✅（5章多图并排，删除"粒子/两张图"等元描述）。HUD放大 ✅（标题0.95→1.3rem，进度点6→10px）。素材重构 ✅（去书法+去重复，22→17张纯场景浮层，14旧文件+JSONL清除，7新图入库，剧本v3精简口播）。narrow_passage双扩展名修复 ✅。.meta.md命令速查旧引用修复 ✅。⬜ 前端dispatch-is-not-a-function（.web缓存已清，待重启验证）。⬜ SIGIL_SCRIPT Reflex DOM输出。⬜ 光缝删除+替代动效（待人类确认方案）。⬜ 端到端集成测试。⬜ 交互打断/jump_chapter测试。
 title: 桃花源记 — 连续动画引擎驱动的流式叙事演示
-updated: '2026-07-01T15:30'
+updated: '2026-07-01T11:45'
 ---
 
 # 桃花源记
@@ -677,10 +677,11 @@ v3（当前版本）：
 | `components/peach_test.html` | 新增 — 独立测试页 (6 mood + 5 position) | ✅ |
 | `framework/runtime/event_generator.py` | 无需改动 — 13 字段全为已支持类型 | ✅ |
 | `config.show_moshi.yaml` | 注册 peach_blossom_stage | ✅ |
-| `assets/moshi_courses/桃花源记/TEST_CTML.md` | 测试剧本（7 图 + 音频占位） | 🔄 端到端待跑 |
-| `assets/moshi_courses/桃花源记/.meta.md` | 课程元信息（interaction: teacher） | ✅ |
-| `apps/assets/pil-images/` | 7 张占位图（stream/forest/cave/village/return + callig_narrow/open）已注册 pil-image.jsonl | ⬜ 待替换正式素材 |
-| `apps/assets/audios/` | 3 段占位 wav | ⬜ 待替换正式 BGM |
+| `assets/moshi_courses/桃花源记/.meta.md` | 课程元信息（interaction: teacher）。命令速查示例已更新 | ✅ |
+| `assets/moshi_courses/桃花源记/0x-*.md` | 6 章剧本 v3 — 纯场景浮层、精简口播、节奏加快 | ✅ |
+| `apps/assets/pil-images/` | 17 张浮层（10 保留 + 7 新）+ 6 张背景图已注册 pil-image.jsonl（59 行） | ✅ |
+| `apps/assets/audios/` | 5 轨正式 BGM（serenity/enchanted/tense/release/tranquil）已入库 local-audio.jsonl | ✅ |
+| `apps/ui/moshi/peach_blossom_materials.md` | 素材清单 v2 — 纯场景、含逐张提示词 | ✅ |
 
 不改 `moshi/main.py`。不改现有 11 个布局。13 字段全部自动生成命令。
 音频由 `apps/tools/audio_player` 独立处理。
@@ -761,6 +762,41 @@ SIGIL_SCRIPT 整个 `<script>` 标签未出现在 DOM 中：
 **交叉校验**：剧本 locator 引用 ↔ JSONL path 逐条校对，27/27 全部对齐。旧版 `callig_narrow.png`/`callig_open.png`（JSONL line 45-46）已被 `overlay_` 前缀版本替代。
 
 **当前状态**：剧本和素材就绪，等待 SIGIL_SCRIPT 修复后跑端到端集成测试。
+
+---
+
+### 2026-07-01 素材重构 — 去书法、去重复、纯场景 (deepseek-v4-pro)
+
+**背景**：人类工程师审查 22 张浮层后认为"有些图片不协调"——书法浮层与场景浮层混搭导致风格割裂，部分图片与粒子系统重复，部分图不对文。
+
+**三原则**：
+1. **全部书法移除** — 8 张 `overlay_callig_*` + 2 张旧版 `callig_*` 全部删除。每张浮层必须是具象场景
+2. **不与粒子重复** — Canvas 粒子层已在做花瓣飘落/水流/金涌，浮层不再做同类内容
+3. **不与背景重复** — 背景图是全屏全景，浮层做特写/局部/不同视角
+
+**删除**：14 个文件（磁盘）+ 14 行（JSONL）。pil-image.jsonl 73→59 行。
+
+**新增**：7 张纯场景浮层入库（JSONL line 60-66）：
+
+| 文件 | 章 | 内容 |
+|------|----|------|
+| `overlay_wuling.png` | Ch01 | 同名替换：地图→宋人山水地势 |
+| `overlay_forest_panorama.png` | Ch02 | 桃林全景纵深感，"中无杂树" |
+| `overlay_abandoned_boat.png` | Ch03 | 被弃空舟，替换 rock_texture |
+| `overlay_narrow_passage.png` | Ch03 | 极窄岩缝，替换 callig_narrow |
+| `overlay_villagers.png` | Ch05 | 村民衣着，替换 mulberry_bamboo |
+| `overlay_farewell.png` | Ch06 | 半掩柴门，替换 callig_return |
+| `overlay_forgotten_path.png` | Ch06 | 空寂渡口，替换 callig_end |
+
+**结果**：22 张 → 17 张（10 保留 + 7 新），全部为场景浮层。每章 2-4 张，视觉风格统一。
+
+**剧本 v3**：6 章全部重写，口播精简约 30-40%，节奏加快。每章 duration 下调 ~0.5min。
+
+**连带修复**：
+- `overlay_narrow_passage.png.png` 双扩展名 → 重命名为 `.png`，JSONL 同步修正
+- `.meta.md` 命令速查中 `callig_narrow.png` 示例 → 替换为 `overlay_boat.png`
+
+**素材清单**：`.moss_ws/apps/ui/moshi/peach_blossom_materials.md` 已重写为 v2，含逐张浮层的出场时刻、画面内容、中英文 AI 提示词。
 
 ---
 
