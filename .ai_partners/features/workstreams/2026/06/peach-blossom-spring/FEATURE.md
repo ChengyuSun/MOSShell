@@ -2,14 +2,14 @@
 created: 2026-06-29
 depends:
 - moshi
-description: 基于 moshi 导演体系的第三门课程。以《桃花源记》为叙事蓝本，验证连续动画引擎 与交互式讲解在流式演示中的可行性——粒子系统叙景、光灵角色动画、五层统一舞台、
+description: 基于 moshi 导演体系的第三门课程。以《桃花源记》为叙事蓝本，验证连续动画引擎 与交互式讲解在流式演示中的可行性——粒子系统叙景、四层统一舞台、
   字段级命令自动生成、用户可随时打断提问或要求回退。单一 peach_blossom_stage 布局 承载全部 6 章，不切换布局。
 milestone: null
 priority: P1
 status: in-progress
-status_note: Phase 1-3 ✅。Phase 4 进行中：背景图可见 ✅、隧道过渡 v3 ✅、tense 氛围重做 ✅。Canvas 动画验证通过 ✅。bug修复：SYNC_SCRIPT f-string转义+gesture桥接 ✅。6章剧本重构 ✅。音频5轨入库 ✅。CTML前缀全量修正 ✅。剧本v2 ✅。素材清单 ✅。22张新浮层素材入库 ✅。剧本↔JSONL交叉校验 ✅。.meta.md YAML frontmatter修复 ✅。连续讲完修复 ✅（rhythm/continuity重写+恢复纪律+去blockquote）。背景图章首展示 ✅（6章bg移至锚点1，Ch04除外）。浮层双图 ✅（5章多图并排，删除"粒子/两张图"等元描述）。HUD放大 ✅（标题0.95→1.3rem，进度点6→10px）。素材重构 ✅（去书法+去重复，22→17张纯场景浮层，14旧文件+JSONL清除，7新图入库，剧本v3精简口播）。narrow_passage双扩展名修复 ✅。.meta.md命令速查旧引用修复 ✅。⬜ 前端dispatch-is-not-a-function（.web缓存已清，待重启验证）。⬜ SIGIL_SCRIPT Reflex DOM输出。⬜ 光缝删除+替代动效（待人类确认方案）。⬜ 端到端集成测试。⬜ 交互打断/jump_chapter测试。
+status_note: Phase 1-3 ✅。Phase 4 进行中：背景图可见 ✅、隧道过渡 v3 ✅、tense 氛围重做 ✅。Canvas 动画验证通过 ✅。bug修复：SYNC_SCRIPT f-string转义 ✅。6章剧本v3 ✅。音频5轨入库 ✅。CTML前缀全量修正 ✅。素材清单 ✅。22张浮层→17张纯场景 ✅。剧本↔JSONL交叉校验 ✅。.meta.md YAML frontmatter修复 ✅。连续讲完修复 ✅。HUD放大 ✅。素材重构 ✅。narrow_passage双扩展名修复 ✅。⬜ 光灵删除 ✅（100行SIGIL_SCRIPT+30行MOOD配置+layout字段+剧本命令+test.html全部移除，舞台五层→四层）。⬜ gold_burst一次爆炸 ✅（3.5s窗口后沉降为温和漂浮，不再循环）。⬜ Ch04高潮命令合并 ✅（四合一：atmosphere+audio+transition+background_image同批发出）。⬜ 视频素材清单v3 ✅（4段视频：stream_flow/petals_falling/cave_light/village_life，含中英文提示词）。⬜ 剧本v4动���化 ✅（set_body大字定格10次+stream_body9次+视频命令9次，CTML密度翻倍，body与浮层共存）。⬜ .meta.md命令速查前缀修正 ✅。⬜ 前端dispatch-is-not-a-function（.web缓存已清，待重启验证）。⬜ 端到端集成测试。⬜ 交互打断/jump_chapter测试。⬜ 章内背景图↔视频双阶段节奏 ✅（4章图→视频门槛切换 + scheme修正 local-video→local-webm）。
 title: 桃花源记 — 连续动画引擎驱动的流式叙事演示
-updated: '2026-07-01T11:45'
+updated: '2026-07-01T16:10'
 ---
 
 # 桃花源记
@@ -18,7 +18,7 @@ updated: '2026-07-01T11:45'
 验证**连续动画引擎**在流式演示中的可行性。
 
 与 moss自我介绍（单向叙事）和极限审判（双向对抗）不同，桃花源记的核心命题是：
-**演示全程不停歇——粒子持续演化、光灵自主运动、场景情绪连续流动**。
+**演示全程不停歇——粒子持续演化、场景情绪连续流动**。
 
 ---
 
@@ -33,9 +33,9 @@ updated: '2026-07-01T11:45'
 - 花瓣、溪流、山洞、屋舍、炊烟——全部可以用粒子系统演绎
 
 验证目标：
-1. **自主动画循环**：Canvas requestAnimationFrame 持续驱动粒子场 + 光灵
+1. **自主动画循环**：Canvas requestAnimationFrame 持续驱动粒子场
 2. **语义级命令**：Ghost 说"展示桃花林"，布局自动编排动画序列
-3. **情绪联动**：粒子颜色/密度/速度 + 光灵颜色/脉动 + 环境光晕 + 基调色调，
+3. **情绪联动**：粒子颜色/密度/速度 + 环境光晕 + 基调色调，
    全部随章节情绪联动
 4. **过渡动画**：粒子溶解+重构替代硬切换，"初极狭→豁然开朗"三段式展开
 5. **交互打断**：用户可随时打断提问，Ghost 用知识锚点回答后继续；
@@ -66,11 +66,15 @@ updated: '2026-07-01T11:45'
 ### 1. 单一布局承载全部 6 章
 
 不像 moss自我介绍 每章切换布局，桃花源记用一个 `peach_blossom_stage` 布局
-贯穿始终。章节切换靠粒子状态、情绪基调、光灵位置的变化——不是切 DOM 树。
+贯穿始终。章节切换靠粒子状态、情绪基调、素材变化——不是切 DOM 树。
 
 理由：桃花源记是连续的旅程，切布局打破沉浸感。情绪弧线本身就是章节标记。
 
-### 2. 渔人灯灵 — 提灯前行的抽象光体
+### 2. ~~渔人灯灵~~ [已移除 · 2026-07-01]
+
+SIGIL_SCRIPT 被 Reflex 静默丢弃（`rx.script()` 注入但不出现在 DOM），排查无果后决定移除光灵。舞台从五层精简为四层，视觉焦点回归粒子环境 + 内容面板。
+
+> 以下为原始设计，保留作为设计轨迹。
 
 不搞具象人物。用 Canvas 绘制的抽象光灵：
 
@@ -93,21 +97,18 @@ updated: '2026-07-01T11:45'
   - 恬静（桃花源）→ 暖金，5s 缓慢呼吸，宽尾迹
   - 怅然（归来）→ 灰暖，6s 极慢呼吸，尾迹消散
 
-### 3. 五层统一舞台
+### 3. 四层统一舞台 [已修订 · 2026-07-01]
+
+光灵层（Layer 3）已移除。当前四层：
 
 ```
 ┌──────────────────────────────────────────────┐
-│  Layer 5: HUD                                │  z-50
+│  Layer 4: HUD                                │  z-50
 │  章节指示器 · 进度环（溪流→桃林→山洞→豁然→村落→归来）│
 ├──────────────────────────────────────────────┤
-│  Layer 4: 内容面板                             │  z-40
+│  Layer 3: 内容面板                             │  z-40
 │  背景层（图片/视频）+ 浮层（图片/视频）            │
-│  不区分内容类型，只区分展现方式——背景在光灵后，     │
-│  浮层在光灵前。从边缘滑入/滑出                    │
-├──────────────────────────────────────────────┤
-│  Layer 3: 光灵层（角色）                        │  z-30
-│  渔人灯灵本体 + 光束手势                        │
-│  Canvas 绘制，requestAnimationFrame 驱动        │
+│  从边缘滑入/滑出，支持图文共存                    │
 ├──────────────────────────────────────────────┤
 │  Layer 2: 粒子环境                              │  z-20
 │  持续演化的粒子场，情绪驱动颜色/密度/速度          │
@@ -237,7 +238,7 @@ Ghost 读口播锚点后用自己的话即兴展开，自主穿插 CTML 动作�
 | 动画 | 手动 CSS class | 布局自动编排——设 `atmosphere` 触发全部层联动 |
 | 资源 | 字段直接塞 locator | 复用 Image.Image / VideoLocator 自动转换管道 |
 | 转场 | `switch_layout` 硬切 | `set_transition` 粒子溶解+重构 |
-| 情绪 | 无 | `set_atmosphere` → 粒子 + 光灵 + 光晕全部联动 |
+| 情绪 | 无 | `set_atmosphere` → 粒子 + 光晕全部联动 |
 
 **起步方案：直接用字段级命令。** 11 个字段中 10 个由 `event_generator.build()` 自动生成命令，
 Ghost 只需学会字段名即可操控舞台。语义别名（如 `reveal_scene` 包装多个字段操作）
@@ -426,15 +427,13 @@ class PeachBlossomState(rx.ComponentState):
     # 氛围
     atmosphere: str = "serene"          # serene | enchanted | tense | released | tranquil | wistful
 
-    # 光灵
-    sigil_position: str = "center"      # 位置标识，或具体坐标
-    sigil_gesture: str = ""             # forward | right | left | "" (idle)
+    # 光灵 — 已移除（2026-07-01）
 
-    # 内容面板 — 不区分内容类型，只区分展现方式
-    background_image: Image.Image = None     # 背景层图片，在光灵后
-    background_video: VideoLocator = ""      # 背景层视频，在光灵后
-    overlay_images: list[Image.Image] = []   # 浮层图片列表，在光灵前，支持多张
-    overlay_videos: list[VideoLocator] = []  # 浮层视频列表，在光灵前
+    # 内容面板
+    background_image: Image.Image = None     # 背景层图片
+    background_video: VideoLocator = ""      # 背景层视频
+    overlay_images: list[Image.Image] = []   # 浮层图片列表
+    overlay_videos: list[VideoLocator] = []  # 浮层视频列表
 
     # 正文 — 流式大字原文/关键句，Ghost 讲到哪显示到哪
     body: str = ""
@@ -455,8 +454,6 @@ class PeachBlossomState(rx.ComponentState):
 | 字段 | 类型 | Ghost 使用的命令 | 命令来源 |
 |---|---|---|---|
 | `atmosphere` | str | `set_atmosphere` `clear_atmosphere` | 自动（str） |
-| `sigil_position` | str | `set_sigil_position` | 自动（str） |
-| `sigil_gesture` | str | `set_sigil_gesture` `clear_sigil_gesture` | 自动（str） |
 | `background_image` | Image.Image | `set_background_image` `clear_background_image` | 自动（Image.Image） |
 | `background_video` | VideoLocator | `set_background_video` `clear_background_video` | 自动（VideoLocator） |
 | `overlay_images` | list[Image.Image] | `append_overlay_images` `pop_overlay_images` `clear_overlay_images` | 自动（list[Image.Image]） |
@@ -468,7 +465,7 @@ class PeachBlossomState(rx.ComponentState):
 | `chapter_id` | str | `set_chapter_id` `clear_chapter_id` | 自动（str） |
 
 Image.Image 和 VideoLocator 复用现有 `event_generator` 的命令生成逻辑——
-locator→资源转换在命令函数内部完成。13 字段全为 str/list/Image.Image/VideoLocator，
+locator→资源转换在命令函数内部完成。11 字段全为 str/list/Image.Image/VideoLocator，
 全部由 `event_generator.build()` 自动生成命令，零手动注册。
 `overlay_images` 从单张改为列表——Ghost 一次可展示多张浮层，append/pop/clear 全自动。
 
@@ -701,6 +698,24 @@ moshi (导演体系)
 
 ---
 
+---
+
+### 2026-07-01 修订记录 (deepseek-v4-pro) — 光灵删除 + 剧本v4 + 视频素材
+
+**光灵删除**：SIGIL_SCRIPT 被 Reflex 静默丢弃，排查无果。决定移除全部光灵逻辑——layout 字段、SIGIL_SCRIPT（~100行JS）、MOOD 中 30 行配置、SYNC_SCRIPT 中 sigil 同步、CSS `#peach-sigil`、`peach_test.html`、6 章剧本中全部 sigil 命令、`.meta.md` 引用。舞台从五层精简为四层，ComponentState 从 13 字段减为 11 字段。
+
+**gold_burst 一次爆炸**：原 `gold_burst` 粒子死后立即 `reset('gold_burst')` 重新炸出，无限循环。改为 `__PEACH_BURST_START__` 计时器 + `bursting` 标志：前 3.5s 爆炸窗口，窗口后粒子沉降为温和金色漂浮（慢速水平漂移 + 微波动），不再循环。
+
+**Ch04 高潮命令合并**：原方案分 Step 1-6 逐步发出。实测发现四条命令同批发出效果最好——`set_atmosphere "released"` + `play` + `set_transition "constrict"` + `set_background_image village.png` 一起发，过渡动画自然编排时序。
+
+**视频素材清单 v3**：4 段视频需求写进 `peach_blossom_materials.md`——stream_flow.mp4（Ch01 溪流）、petals_falling.mp4（Ch02 花瓣飘落）、cave_light.mp4（Ch03 洞穴呼吸光点）、village_life.mp4（Ch05 田园慢航拍）。每段含中英文 AI 提示词。
+
+**剧本 v4 动态化**：6 章全部重写——`set_body` 大字定格 10 次（关键句瞬间出现并停留）、`stream_body` 9 次（原文流式展示）、视频命令 9 次（背景视频 + 浮层视频）、CTML 密度翻倍（每锚点都有画面变化）、body 与浮层共存（不再先清浮层再出 body）。
+
+**.meta.md 命令速查前缀修正**：字段级命令全部加上 `apps.ui_reflex:` 前缀，格式从 `<set_atmosphere>value</set_atmosphere>` 改为 `<apps.ui_reflex:set_atmosphere t="value"/>`。
+
+---
+
 *Created: 2026-06-29. Based on discussion with human engineer.*
 
 ---
@@ -822,3 +837,36 @@ SIGIL_SCRIPT 整个 `<script>` 标签未出现在 DOM 中：
 - 推测根因：新增 `PeachBlossomState`（13 字段，含 `Image.Image | None` 联合类型 + `list[Image.Image]`）后，前端的 `.web/` 编译缓存中 state schema 与新的 Python state 结构不兼容
 - 修复方向：删除 `.web/` 缓存目录，重启 Reflex 强制重新编译前端
 - 备注：`.web/` 已清，待人类工程师重新 `uv run reflex run` 验证
+
+---
+
+### 2026-07-01 章内背景图↔视频双阶段节奏 (coding by claude-opus-4-8)
+
+**背景**：此前每章背景锁定单一状态（章间交替：01视频/02图/03视频/04图/05视频/06图）。人类工程师提出——背景图不必一开章就换成视频，可以先用图讲几句、再切视频，让**章内**也有变化，增强变化性。
+
+**设计原则**：不是每章都要"图→视频"跃迁。跃迁点选在叙事的"门槛时刻"（跨过去世界就变），Ch04/Ch06 的"静"是设计的一部分，故意不塞跃迁。
+
+**改动（4 章加入章内图→视频门槛切换）**：
+
+| 章 | 图（地基） | 门槛切换点 | 视频（增强） |
+|---|------|--------|------|
+| 01 缘溪行 | `stream.png` | "缘溪行，忘路之远近" | `stream_flow.webm` 溪水流动 |
+| 02 桃花林 | `forest.png` | "落英缤纷、花瓣翻飞" | `petals_falling.webm`（浮层视频→背景视频） |
+| 03 山洞 | `cave.png`（**此前从未启用**） | "仿佛若有光" | `cave_light.webm` 呼吸光点 → "初极狭"时 clear 回全暗蓄力 |
+| 05 桃花源 | `village.png` | "阡陌交通、往来种作" | `village_life.webm` 村落活起来 |
+
+- Ch02：`petals_falling` 从浮层视频改为背景视频，与粒子花瓣形成"背景环境+近景"深度层次，砍掉浮层视频避免三层花瓣打架。
+- Ch03：启用一直被浪费的 `cave.png`。三段式：静态洞口图 → 呼吸光点视频（"仿佛、若有"的若隐若现质感）→ 全暗（"初极狭"压缩，为 Ch04 爆炸蓄力）。
+- Ch04 静态收尾 + Ch05 跃迁：递进"存在→生活"——Ch04 豁然开朗先看到村子存在（静态村落全景），Ch05 看到村子生活（活起来）。避免两章重复切换。
+
+**关键 bug 修复 — 视频 locator scheme 用错**：
+
+- 剧本里的视频 locator 是 `local-video://workspace-assets/xxx.mp4`，但：
+  1. `local-video.jsonl` 索引是**空的**，桃花源视频实际入库在 `local-webm.jsonl`（`local-webm` scheme，见 `core/resources/local_video.py` 第 239 行起的 LocalWebm provider）
+  2. 文件是 `.webm` 不是 `.mp4`
+- git HEAD 的剧本**根本没有视频 locator**——视频命令是工作树新增、从未跑通过。之前误以为"已在用视频"。
+- 修复：全部 `local-video://xxx.mp4` → `local-webm://xxx.webm`（scheme + 后缀一起改）。
+- 教训：
+  11. **`local-video` 与 `local-webm` 是两个独立 provider**，各自查自己的 jsonl 索引。webm 素材必须用 `local-webm://` scheme，否则查空索引找不到文件。改视频 locator 时先确认素材入库在哪个索引。
+
+**待验证**：端到端跑通时确认 4 段 webm 背景视频在 peach_blossom_stage 的 `<video>` 元素中正常加载播放（crossfade 0.8s），以及图↔视频切换的 opacity 过渡是否平滑。

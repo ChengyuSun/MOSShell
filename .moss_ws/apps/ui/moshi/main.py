@@ -97,6 +97,12 @@ async def main(matrix: Matrix):
         ),
     )
 
+    @channel.build.instruction
+    async def instruction() -> str:
+        return "必须用户命令后才能加载课程，禁止自动加载。"
+
+
+
     # ── context_messages ──────────────────────────────────────────────────
     #
     # 三层叠加，每层独立判断可见性：
@@ -188,7 +194,7 @@ async def main(matrix: Matrix):
             f"已加载「{course.title}」，共{len(course.ordered_ids)}章。\n"
             f"章节路径：{chaps}\n\n"
             f"现在立即调用 <apps.ui_moshi:next_chapter /> 进入第一章。"
-            f"不要停留——直接推进。"
+            f"不要停留,直接推进。"
         )
 
     @channel.build.command()
@@ -206,8 +212,8 @@ async def main(matrix: Matrix):
             current_id = course.ordered_ids[idx + 1]
         chap = course.chapters[current_id]
         return Observe.new(
-            f"进入第{chap.order}章「{chap.title}」\n"
-            f"布局：{chap.suggested_layout} | 时长：{chap.duration}"
+            f"已进入第{chap.order}章「{chap.title}」\n"
+            f"本章需要布局：{chap.suggested_layout}| 时长：{chap.duration}"
         )
 
     @channel.build.command()
@@ -222,8 +228,8 @@ async def main(matrix: Matrix):
         current_id = id
         chap = course.chapters[id]
         return Observe.new(
-            f"跳转到第{chap.order}章「{chap.title}」\n"
-            f"布局：{chap.suggested_layout} | 时长：{chap.duration}"
+            f"已跳转到第{chap.order}章「{chap.title}」\n"
+            f"本章需要布局:{chap.suggested_layout} | 时长：{chap.duration}"
         )
 
     await matrix.provide_channel(channel)

@@ -14,3 +14,4 @@ layouts:
   - "framework.layouts.brain.BrainLayout"
   - "framework.layouts.danmaku.DanmakuLayout"
   - "framework.layouts.courtroom.CourtroomState"
+  - "framework.layouts.peach_blossom_stage.PeachBlossomState"

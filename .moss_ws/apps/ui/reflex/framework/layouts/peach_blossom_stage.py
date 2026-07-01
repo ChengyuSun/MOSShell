@@ -1,13 +1,13 @@
-"""PeachBlossomStage — 桃花源记 五层连续动画舞台。
+"""PeachBlossomStage — 桃花源记 四层连续动画舞台。
 
-暗空间光绘风格：粒子叙景 + 光灵角色 + 氛围统调。
-单一布局承载全部 6 章，章节切换靠粒子态/情绪/光灵位置变化。
+暗空间光绘风格：粒子叙景 + 氛围统调。
+单一布局承载全部 6 章，章节切换靠粒子态/情绪/图片素材变化。
 
 Reflex ↔ Canvas 桥接：state 变更 → #peach-store data-* →
 MutationObserver → window.__PEACH_* → Canvas rAF 每帧读取。
 
-五层：z-0 暗底 / z-1 光晕 / z-2 统调 / z-3 暗角+背景图 / z-4 粒子
-      z-5 光灵+隧道光源 / z-6 过渡遮罩+光缝 / z-7 浮层 / z-8 body / z-10 HUD
+四层：z-0 暗底 / z-1 光晕 / z-2 统调 / z-3 暗角+背景图 / z-4 粒子
+      z-6 过渡遮罩+光缝 / z-7 浮层 / z-8 body / z-10 HUD
 """
 
 from PIL import Image
@@ -21,7 +21,6 @@ from framework.components.peach_assets import (
     PEACH_CSS,
     SYNC_SCRIPT,
     PARTICLE_SCRIPT,
-    SIGIL_SCRIPT,
 )
 
 _PROGRESS_LABELS = ["溪流", "桃林", "山洞", "豁然", "村落", "归来"]
@@ -61,9 +60,7 @@ class PeachBlossomState(rx.ComponentState, NameMixin):
     # 氛围
     atmosphere: str = DEFAULT_MOOD
 
-    # 光灵
-    sigil_position: str = "center"
-    sigil_gesture: str = ""
+    # 光灵 — 已移除。舞台仅保留粒子环境、内容面板、HUD。
 
     # 背景（z-10，光灵后）
     background_image: Image.Image | None = None
@@ -119,8 +116,6 @@ class PeachBlossomState(rx.ComponentState, NameMixin):
             # ── Bridge: Reflex state → JS globals ──
             rx.el.div(id="peach-store",
                       data_atmosphere=mood,
-                      data_sigil_position=cls.sigil_position,
-                      data_sigil_gesture=cls.sigil_gesture,
                       data_transition=cls.transition,
                       hidden=True),
 
@@ -168,9 +163,6 @@ class PeachBlossomState(rx.ComponentState, NameMixin):
             # z-4: particle canvas
             rx.el.canvas(id="peach-particles"),
 
-            # z-5: sigil canvas
-            rx.el.canvas(id="peach-sigil"),
-
             # z-40: overlay images + videos (光灵前方，浮层区)
             rx.box(
                 rx.foreach(
@@ -217,7 +209,6 @@ class PeachBlossomState(rx.ComponentState, NameMixin):
             # Scripts + CSS
             rx.script(SYNC_SCRIPT),
             rx.script(PARTICLE_SCRIPT),
-            rx.script(SIGIL_SCRIPT),
             rx.html(f"<style>{PEACH_CSS}</style>"),
             class_name=rx.cond(
                 cls.transition == "constrict",
