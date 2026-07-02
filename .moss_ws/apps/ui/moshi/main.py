@@ -192,8 +192,7 @@ async def main(matrix: Matrix):
         chaps = " → ".join(course.ordered_ids)
         return Observe.new(
             f"已加载「{course.title}」，共{len(course.ordered_ids)}章。\n"
-            f"章节路径：{chaps}\n\n"
-            f"现在立即调用 <apps.ui_moshi:next_chapter /> 进入第一章。"
+            f"现在立即调用 <apps.ui_moshi:next_chapter /> 进入第一章。\n"
             f"不要停留,直接推进。"
         )
 
@@ -208,7 +207,7 @@ async def main(matrix: Matrix):
         else:
             idx = course.ordered_ids.index(current_id)
             if idx + 1 >= len(course.ordered_ids):
-                return Observe.new("已是最后一章。收束表演，准备谢幕。")
+                return Observe.new("已是最后一章。自然结束，不要再推进。")
             current_id = course.ordered_ids[idx + 1]
         chap = course.chapters[current_id]
         return Observe.new(

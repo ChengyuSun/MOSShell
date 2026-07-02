@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poetry Grid — 桃花源记 Demo</title>
+<style>
+/* ═══════════════════════════════════════════════════ */
+.poetry-root {
+    --p-bg: #e8e0d0;
+    --p-card-bg: #f5f0e8;
+    --p-text: #2c1810;
+    --p-sub: #6b5a4e;
+    --p-border: rgba(44,24,16,0.08);
+    --p-shadow: rgba(44,24,16,0.15);
+    --p-accent: #8b5e3c;
+}
+.poetry-root.warm {
+    --p-bg: #ede4d2; --p-card-bg: #faf6f0; --p-text: #3d2b1f;
+    --p-sub: #7a6a5c; --p-border: rgba(61,43,31,0.06); --p-shadow: rgba(61,43,31,0.10); --p-accent: #a0784c;
+}
+.poetry-root.dark {
+    --p-bg: #0d0d0d; --p-card-bg: #1a1a1a; --p-text: #e0d8c8;
+    --p-sub: #8a8070; --p-border: rgba(224,216,200,0.06); --p-shadow: rgba(0,0,0,0.40); --p-accent: #c0a878;
+}
+.poetry-root.fresh {
+    --p-bg: #dce8dc; --p-card-bg: #f0f4f0; --p-text: #1a2f1a;
+    --p-sub: #5a6e5a; --p-border: rgba(26,47,26,0.06); --p-shadow: rgba(26,47,26,0.10); --p-accent: #4a7a4a;
+}
+
+.poetry-root {
+    position: relative; width: 100%; height: 100vh; overflow: hidden;
+    background: var(--p-bg); transition: background 0.8s ease;
+    font-family: "Songti SC", "Noto Serif SC", Georgia, serif;
+}
+
+/* ═══════════════════════════════════════════════════ */
+/* PHASE 0: Full-screen background video */
+/* ═══════════════════════════════════════════════════ */
+.poetry-bg-video {
+    position: fixed; inset: 0; z-index: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    opacity: 1; transition: opacity 0.6s ease;
+}
+
+/* ═══════════════════════════════════════════════════ */
+/* PHASE 1: Chapter splash */
+/* ═══════════════════════════════════════════════════ */
+.poetry-splash {
+    position: fixed; inset: 0; z-index: 60;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+}
+.poetry-splash-img {
+    width: 50vw; height: 50vh;
+    object-fit: cover; border-radius: 16px;
+    box-shadow: 0 12px 60px rgba(0,0,0,0.4);
+    animation: splashEnter 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.poetry-splash-title {
+    margin-top: 20px;
+    font-size: 32px; font-weight: 700; color: var(--p-text);
+    letter-spacing: 0.08em;
+    animation: splashEnter 0.8s 0.15s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes splashEnter {
+    from { opacity: 0; transform: scale(0.85); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Splash shrink ── */
+.poetry-splash.shrinking .poetry-splash-img {
+    animation: splashToBadge 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.poetry-splash.shrinking .poetry-splash-title {
+    animation: splashTitleOut 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes splashToBadge {
+    to {
+        width: 80px; height: 80px; border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+        position: fixed; top: 24px; left: 32px;
+        transform: none;
+    }
+}
+@keyframes splashTitleOut {
+    to { opacity: 0; transform: translateY(-20px); }
+}
+
+/* ── Badge ── */
+.poetry-badge {
+    position: fixed; top: 24px; left: 32px; z-index: 9;
+    display: flex; align-items: center; gap: 12px;
+    pointer-events: none;
+    animation: badgeIn 0.4s ease both;
+}
+.poetry-badge-img {
+    width: 64px; height: 64px; border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+}
+.poetry-badge-text {
+    font-size: 22px; font-weight: 700; color: var(--p-text);
+    letter-spacing: 0.06em;
+}
+@keyframes badgeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ═══════════════════════════════════════════════════ */
+/* PHASE 2: Grid (2×2) */
+/* ═══════════════════════════════════════════════════ */
+.poetry-grid {
+    position: absolute; inset: 0; z-index: 5;
+    display: grid;
+    grid-template-columns: minmax(0, 380px) minmax(0, 380px);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px; padding: 120px 48px 48px;
+    align-content: center; justify-content: center;
+    pointer-events: none;
+}
+
+.poetry-card {
+    position: relative; border-radius: 12px; overflow: hidden;
+    background: var(--p-card-bg); box-shadow: 0 4px 24px var(--p-shadow);
+    border: 1px solid var(--p-border);
+    display: flex; flex-direction: column;
+    animation: cardEnter 0.5s 0.1s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes cardEnter {
+    from { opacity: 0; transform: translateY(30px) scale(0.7); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.poetry-card-media-wrap {
+    flex: 0 0 65%; position: relative; overflow: hidden; background: var(--p-card-bg);
+}
+.poetry-card-media-wrap::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+    background: linear-gradient(transparent, var(--p-card-bg));
+    pointer-events: none; z-index: 1;
+}
+.poetry-card-media {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+}
+
+.poetry-card-text-wrap {
+    flex: 0 0 35%; display: flex; align-items: center; justify-content: center;
+    padding: 8px 16px 16px;
+}
+.poetry-card-text {
+    font-size: 22px; font-weight: 600; color: var(--p-text);
+    letter-spacing: 0.06em; line-height: 1.4; text-align: center;
+    animation: inkReveal 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes inkReveal {
+    0% { opacity: 0; filter: blur(3px); transform: translateY(14px); }
+    60% { opacity: 0.8; filter: blur(0.5px); }
+    100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════ */
+/* PHASE 2b: Active overlay */
+/* ═══════════════════════════════════════════════════ */
+.poetry-overlay-area {
+    position: fixed; inset: 0; z-index: 50; pointer-events: none;
+}
+.poetry-overlay-item {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 50vw; max-height: 50vh;
+    border-radius: 14px; object-fit: contain;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.35);
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.poetry-overlay-item.active {
+    opacity: 1; transform: translate(-50%, -50%) scale(1);
+    animation: overlayEnter 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes overlayEnter {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ═══════════════════════════════════════════════════ */
+/* PHASE 3: Transition */
+/* ═══════════════════════════════════════════════════ */
+.poetry-root.transitioning .poetry-card { animation: none; }
+.poetry-root.transitioning .poetry-card:nth-child(1) { animation: cardExitTL 0.5s ease-in both; }
+.poetry-root.transitioning .poetry-card:nth-child(2) { animation: cardExitTR 0.5s ease-in both; }
+.poetry-root.transitioning .poetry-card:nth-child(3) { animation: cardExitBL 0.5s ease-in both; }
+.poetry-root.transitioning .poetry-card:nth-child(4) { animation: cardExitBR 0.5s ease-in both; }
+@keyframes cardExitTL { to { opacity: 0; transform: translate(-120vw, -80vh) rotate(-5deg); } }
+@keyframes cardExitTR { to { opacity: 0; transform: translate(120vw, -80vh) rotate(5deg); } }
+@keyframes cardExitBL { to { opacity: 0; transform: translate(-120vw, 80vh) rotate(5deg); } }
+@keyframes cardExitBR { to { opacity: 0; transform: translate(120vw, 80vh) rotate(-5deg); } }
+.poetry-curtain {
+    position: fixed; inset: 0; z-index: 200; background: #000;
+    pointer-events: none; animation: curtainFade 0.8s ease-in-out both;
+}
+@keyframes curtainFade {
+    0% { opacity: 0; } 30% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; }
+}
+
+/* ── placeholder ── */
+.poetry-card-placeholder {
+    border: 1px dashed var(--p-border); background: transparent;
+    box-shadow: none; animation: none; opacity: 0.25;
+}
+
+/* ═══════════════════════════════════════════════════ */
+/* Controls */
+/* ═══════════════════════════════════════════════════ */
+#controls {
+    position: fixed; bottom: 20px; right: 20px; z-index: 999;
+    display: flex; flex-direction: column; gap: 5px;
+}
+#controls button {
+    padding: 8px 14px; border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px; background: rgba(0,0,0,0.65);
+    color: #fff; font-size: 12px; cursor: pointer;
+    backdrop-filter: blur(8px); transition: background 0.2s;
+}
+#controls button:hover { background: rgba(0,0,0,0.85); }
+#controls button.auto { border-color: rgba(255,200,100,0.5); }
+
+#info {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    z-index: 998; padding: 6px 18px; border-radius: 20px;
+    background: rgba(0,0,0,0.55); color: rgba(255,255,255,0.75);
+    font-size: 12px; backdrop-filter: blur(8px); pointer-events: none;
+}
+#phase-label {
+    position: fixed; top: 52px; left: 50%; transform: translateX(-50%);
+    z-index: 998; padding: 8px 20px; border-radius: 10px;
+    background: rgba(0,0,0,0.7); color: #ffcc00;
+    font-size: 14px; text-align: center;
+    backdrop-filter: blur(8px); pointer-events: none;
+    white-space: pre-line;
+}
+</style>
+</head>
+<body>
+
+<div id="app" class="poetry-root ink"></div>
+<div id="info"></div>
+<div id="phase-label"></div>
+
+<div id="controls">
+  <button onclick="runFullDemo()" class="auto">▶ 完整演示（3章）</button>
+  <button onclick="runChapterDemo(0)">▶ 第一章「缘溪行」</button>
+  <button onclick="runChapterDemo(1)">▶ 第二章「桃花源」</button>
+  <button onclick="runChapterDemo(2)">▶ 第三章「寻而不遇」</button>
+  <button onclick="stepNext()">⏭ 手动下一步</button>
+  <button onclick="demoReset()">↺ 重置</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// Image base path
+// ═══════════════════════════════════════════════════
+const IMG = '/Users/scy/Documents/code/t2i/img-output';
+
+// ═══════════════════════════════════════════════════
+// Chapters — 桃花源记
+// ═══════════════════════════════════════════════════
+const CHAPTERS = [
+    {
+        title: '缘溪行',
+        style: 'ink',
+        splashImg: `${IMG}/ch1_1-武陵人捕鱼.png`,
+        lines: [
+            { text: '武陵人捕鱼为业', img: `${IMG}/ch1_1-武陵人捕鱼.png` },
+            { text: '缘溪行，忘路之远近', img: `${IMG}/ch1_2-缘溪行.png` },
+            { text: '忽逢桃花林', img: `${IMG}/ch1_3-忽逢桃花林.png` },
+            { text: '落英缤纷', img: `${IMG}/ch1_4-落英缤纷.png` },
+        ],
+    },
+    {
+        title: '桃花源',
+        style: 'fresh',
+        splashImg: `${IMG}/ch2_1-山有小口.png`,
+        lines: [
+            { text: '山有小口，仿佛若有光', img: `${IMG}/ch2_1-山有小口.png` },
+            { text: '豁然开朗', img: `${IMG}/ch2_2-豁然开朗.png` },
+            { text: '屋舍俨然', img: `${IMG}/ch2_3-屋舍俨然.png` },
+            { text: '怡然自乐', img: `${IMG}/ch2_4-怡然自乐.png` },
+        ],
+    },
+    {
+        title: '寻而不遇',
+        style: 'warm',
+        splashImg: `${IMG}/ch3_1-处处志之.png`,
+        lines: [
+            { text: '处处志之', img: `${IMG}/ch3_1-处处志之.png` },
+            { text: '诣太守，说如此', img: `${IMG}/ch3_2-诣太守.png` },
+            { text: '不复得路', img: `${IMG}/ch3_3-不复得路.png` },
+            { text: '后遂无问津者', img: `${IMG}/ch3_4-无问津者.png` },
+        ],
+    },
+];
+
+// ═══════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════
+const state = {
+    chapterTitle: '',
+    chapterImage: '',
+    badgeVisible: false,
+    lines: [],
+    cardImages: [],
+    activeOverlay: null,
+    bgVideo: '',
+    style: 'ink',
+    transitioning: false,
+};
+
+// ═══════════════════════════════════════════════════
+// Render
+// ═══════════════════════════════════════════════════
+function render(phaseText) {
+    const app = document.getElementById('app');
+    let html = '';
+
+    if (state.bgVideo) {
+        html += `<video src="${state.bgVideo}" class="poetry-bg-video" autoplay muted loop></video>`;
+    }
+
+    // Phase 1: Splash
+    if (state.chapterImage && !state.badgeVisible) {
+        html += '<div class="poetry-splash" id="splash">';
+        html += `<img src="${state.chapterImage}" class="poetry-splash-img">`;
+        html += `<div class="poetry-splash-title">${state.chapterTitle}</div>`;
+        html += '</div>';
+    }
+
+    // Badge
+    if (state.badgeVisible) {
+        html += '<div class="poetry-badge">';
+        html += `<img src="${state.chapterImage}" class="poetry-badge-img">`;
+        html += `<div class="poetry-badge-text">${state.chapterTitle}</div>`;
+        html += '</div>';
+    }
+
+    // Phase 2: Grid
+    html += '<div class="poetry-grid">';
+    for (let i = 0; i < 4; i++) {
+        const line = state.lines[i] || '';
+        const img = state.cardImages[i] || '';
+
+        if (!line && !img) {
+            html += '<div class="poetry-card poetry-card-placeholder"></div>';
+        } else {
+            html += '<div class="poetry-card">';
+            if (img) {
+                html += '<div class="poetry-card-media-wrap">';
+                html += `<img src="${img}" class="poetry-card-media">`;
+                html += '</div>';
+            }
+            html += '<div class="poetry-card-text-wrap">';
+            html += `<div class="poetry-card-text">${line}</div>`;
+            html += '</div>';
+            html += '</div>';
+        }
+    }
+    html += '</div>';
+
+    // Phase 2b: Active overlay
+    if (state.activeOverlay) {
+        html += '<div class="poetry-overlay-area">';
+        html += `<img src="${state.activeOverlay.src}" class="poetry-overlay-item active">`;
+        html += '</div>';
+    }
+
+    // Phase 3: Curtain
+    if (state.transitioning) {
+        html += '<div class="poetry-curtain"></div>';
+    }
+
+    app.className = state.transitioning
+        ? `poetry-root transitioning ${state.style}`
+        : `poetry-root ${state.style}`;
+    app.innerHTML = html;
+
+    if (phaseText) document.getElementById('phase-label').textContent = phaseText;
+    const info = document.getElementById('info');
+    const parts = [];
+    if (state.chapterTitle) parts.push(state.chapterTitle);
+    parts.push(`cards: ${state.lines.length}/4`);
+    parts.push(state.style);
+    if (state.transitioning) parts.push('TRANSITION');
+    document.getElementById('info').textContent = parts.join(' | ');
+}
+
+// ═══════════════════════════════════════════════════
+// Chapter orchestration
+// ═══════════════════════════════════════════════════
+async function playChapter(idx) {
+    const ch = CHAPTERS[idx];
+    state.style = ch.style;
+    state.chapterTitle = ch.title;
+    state.chapterImage = ch.splashImg;
+    state.badgeVisible = false;
+    state.lines = [];
+    state.cardImages = [];
+    state.activeOverlay = null;
+    state.transitioning = false;
+    state.bgVideo = '';
+
+    // Step 0: Video intro (placeholder)
+    render(`📹 第${idx+1}章「${ch.title}」开场视频（Demo 跳过视频，直接进图）`);
+    await sleep(1200);
+
+    // Step 1: Splash
+    render(`🖼 splash：${ch.title} — 章节图+标题居中亮相`);
+    await sleep(2000);
+
+    // Step 2: Shrink
+    const app = document.getElementById('app');
+    const splash = app.querySelector('.poetry-splash');
+    if (splash) splash.classList.add('shrinking');
+    render(`📌 「${ch.title}」缩到左上角 badge`);
+    await sleep(800);
+
+    state.badgeVisible = true;
+    render(`📌 准备逐句填格`);
+    await sleep(800);
+
+    // Step 3-6: Per-line
+    for (let i = 0; i < ch.lines.length; i++) {
+        const line = ch.lines[i];
+
+        // Overlay
+        state.activeOverlay = { type: 'image', src: line.img };
+        render(`✨ 第${i+1}句配图亮相（浮层居中）→ "${line.text}"`);
+        await sleep(1500);
+
+        // Fill cell
+        state.activeOverlay = null;
+        state.cardImages.push(line.img);
+        state.lines.push(line.text);
+        render(`📥 填入格子 #${i}，文字 ink-reveal → "${line.text}"`);
+        await sleep(1800);
+    }
+
+    render(`✅ 「${ch.title}」四宫格填满`);
+    await sleep(2000);
+
+    // Transition
+    state.transitioning = true;
+    render(`🎬 转场：卡片飞出 + 黑幕（moshi 切换章节+音乐）`);
+    await sleep(1000);
+
+    state.transitioning = false;
+    state.chapterTitle = '';
+    state.chapterImage = '';
+    state.badgeVisible = false;
+    state.lines = [];
+    state.cardImages = [];
+    state.activeOverlay = null;
+    render('');
+}
+
+// ═══════════════════════════════════════════════════
+// Buttons
+// ═══════════════════════════════════════════════════
+async function runChapterDemo(idx) { await playChapter(idx); }
+
+async function runFullDemo() {
+    for (let i = 0; i < CHAPTERS.length; i++) {
+        await playChapter(i);
+        await sleep(1500);
+    }
+    document.getElementById('phase-label').textContent = '🏁 桃花源记三章演示完成';
+}
+
+function demoReset() {
+    state.chapterTitle = ''; state.chapterImage = ''; state.badgeVisible = false;
+    state.lines = []; state.cardImages = [];
+    state.activeOverlay = null; state.bgVideo = ''; state.style = 'ink';
+    state.transitioning = false;
+    _manualCh = 0; _manualStep = 0;
+    document.getElementById('phase-label').textContent = '';
+    render();
+}
+
+// ═══════════════════════════════════════════════════
+// Manual step-through
+// ═══════════════════════════════════════════════════
+let _manualCh = 0;
+let _manualStep = 0;
+
+function _buildManualSteps(chIdx) {
+    const ch = CHAPTERS[chIdx];
+    return [
+        () => { state.style = ch.style; state.chapterTitle = ch.title; state.chapterImage = ch.splashImg; state.badgeVisible = false; state.lines = []; state.cardImages = []; state.activeOverlay = null; state.transitioning = false; render(`[手动] 加载第${chIdx+1}章「${ch.title}」`); },
+        () => { render(`[手动] splash 图+标题居中`); },
+        () => { state.badgeVisible = true; render(`[手动] 缩到左上角 badge`); },
+        () => { state.activeOverlay = {type:'image', src:ch.lines[0].img}; render(`[手动] 浮层：${ch.lines[0].text}`); },
+        () => { state.activeOverlay = null; state.cardImages.push(ch.lines[0].img); state.lines.push(ch.lines[0].text); render(`[手动] 填入格子 #0`); },
+        () => { state.activeOverlay = {type:'image', src:ch.lines[1].img}; render(`[手动] 浮层：${ch.lines[1].text}`); },
+        () => { state.activeOverlay = null; state.cardImages.push(ch.lines[1].img); state.lines.push(ch.lines[1].text); render(`[手动] 填入格子 #1`); },
+        () => { state.activeOverlay = {type:'image', src:ch.lines[2].img}; render(`[手动] 浮层：${ch.lines[2].text}`); },
+        () => { state.activeOverlay = null; state.cardImages.push(ch.lines[2].img); state.lines.push(ch.lines[2].text); render(`[手动] 填入格子 #2`); },
+        () => { state.activeOverlay = {type:'image', src:ch.lines[3].img}; render(`[手动] 浮层：${ch.lines[3].text}`); },
+        () => { state.activeOverlay = null; state.cardImages.push(ch.lines[3].img); state.lines.push(ch.lines[3].text); render(`[手动] 填入格子 #3 — 满格`); },
+        () => { state.transitioning = true; render(`[手动] 转场飞出`); },
+        () => { state.transitioning = false; state.chapterTitle = ''; state.chapterImage = ''; state.badgeVisible = false; state.lines = []; state.cardImages = []; state.activeOverlay = null; _manualCh++; _manualStep = 0; render(`[手动] 章结束`); },
+    ];
+}
+
+let _curManual = _buildManualSteps(0);
+
+function stepNext() {
+    if (_manualCh >= CHAPTERS.length) {
+        document.getElementById('phase-label').textContent = '🏁 全部章节完成';
+        return;
+    }
+    if (_manualStep === 0 && _manualCh > 0) {
+        _curManual = _buildManualSteps(_manualCh);
+    }
+    if (_manualStep >= _curManual.length) {
+        _manualStep = 0;
+        if (_manualCh >= CHAPTERS.length) {
+            document.getElementById('phase-label').textContent = '🏁 全部章节完成';
+            return;
+        }
+    }
+    _curManual[_manualStep]();
+    document.getElementById('phase-label').textContent +=
+        `  [章${_manualCh+1}-步${_manualStep+1}]`;
+    _manualStep++;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Init
+render();
+</script>
+</body>
+</html>

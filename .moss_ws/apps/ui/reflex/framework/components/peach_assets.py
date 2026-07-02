@@ -393,11 +393,9 @@ PEACH_CSS = """
 
 /* Body text (z-45) */
 .peach-body-area{position:absolute;bottom:18%;left:50%;transform:translateX(-50%);
-  z-index:8;pointer-events:none;text-align:center;max-width:70%;transition:transform 0.4s,font-size 0.4s;}
-.peach-body-area.compact{transform:translateX(-50%)translateY(40px);}
+  z-index:8;pointer-events:none;text-align:center;max-width:70%;}
 .peach-body-text{font-size:3rem;font-weight:700;color:#ffffff;letter-spacing:0.1em;line-height:1.6;
   text-shadow:0 0 40px rgba(255,245,220,0.5),0 0 100px rgba(255,220,160,0.25),0 0 200px rgba(200,160,100,0.1);white-space:pre-wrap;}
-.peach-body-area.compact .peach-body-text{font-size:2rem;}
 
 /* HUD (z-50) */
 .peach-hud{position:absolute;top:0;left:0;right:0;z-index:10;

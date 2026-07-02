@@ -15,3 +15,4 @@ layouts:
   - "framework.layouts.danmaku.DanmakuLayout"
   - "framework.layouts.courtroom.CourtroomState"
   - "framework.layouts.peach_blossom_stage.PeachBlossomState"
+  - "framework.layouts.poetry_grid.PoetryGridState"

@@ -35,15 +35,16 @@ duration: "~35s"
 <apps.ui_reflex:set_title t="宣判"/>
 <apps.ui_reflex:set_sub_title t="判决：轻罪 · 缓刑"/>
 
-<apps.ui_reflex:append_evidence_images locator="pil-image://workspace-assets/拘禁判决.png" />
 
 本案审理至此，合议庭对全案证据及双方陈述已形成完整判断。
 
-被告携带刀具进入后巷——这一点已确认。刀柄上的指纹是握刀姿态。死者身上有刀伤。这三项事实闭合充分。被告的行为造成了死亡结果——这是事实，不能回避。
+被告携带刀具进入后巷——这一点已确认。
 
-但——死者手机消息印证了当晚存在第三方威胁。弹壳上没有被告指纹。死者在被告到达前已被告知"别让他活着离开"。现场存在超出双方预期的暴力因素。
+但——死者手机消息印证了当晚存在第三方威胁。
 
 这不能抹去被告的行为。但必须在量刑时予以考量。
+<apps.ui_reflex:append_evidence_images locator="pil-image://workspace-assets/拘禁判决.png" />
+
 
 本庭裁定：被告有罪。但从轻处罚。缓刑。
 

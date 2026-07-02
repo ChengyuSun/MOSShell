@@ -35,19 +35,16 @@ duration: "~35s"
 <apps.ui_reflex:set_title t="宣判"/>
 <apps.ui_reflex:set_sub_title t="判决：重罪"/>
 
-<apps.ui_reflex:append_evidence_images locator="pil-image://workspace-assets/死刑判决.png" />
 
 本案审理至此，合议庭对全案证据及双方陈述已形成完整判断。
 
 CCTV 拍到被告于凌晨一点四十七分从后巷离开——不是求助，不是报警，是逃离。刀柄上的指纹是握刀姿态。衣服上的死者血迹是转移血迹——被告与出血源有过近距离接触。
 
-（如果嫌疑人认罪：被告已当庭认罪。）
 
-（如果嫌疑人说谎/回避：被告在庭审中的陈述（存在重大矛盾 / 多次回避 / 已被 CCTV 揭穿为不实）。本庭对被告整体可信度持否定判断。）
+死者手机消息指出了第三人介入的线索——这一点本庭认可。但为何被告选择逃离而非报警。
 
-死者手机消息指出了第三人介入的线索——这一点本庭认可。但第三人介入不能解释刀为何在被告手中、为何刀上有被告的握刀指纹、为何被告选择逃离而非报警。
 
-第三人介入与被告的伤害行为之间，不存在排他关系。
+<apps.ui_reflex:append_evidence_images locator="pil-image://workspace-assets/死刑判决.png" />
 
 本庭裁定：被告的行为构成故意伤害致死。
 

@@ -183,16 +183,12 @@ class PeachBlossomState(rx.ComponentState, NameMixin):
                 class_name="peach-overlay-area",
             ),
 
-            # z-45: body text (compact when overlays present)
+            # z-45: body text (fixed size)
             rx.cond(
                 cls.body != "",
                 rx.box(
                     rx.text(cls.body, class_name="peach-body-text"),
-                    class_name=rx.cond(
-                        (cls.overlay_images.length() > 0) | (cls.overlay_videos.length() > 0),
-                        "peach-body-area compact",
-                        "peach-body-area",
-                    ),
+                    class_name="peach-body-area",
                 ),
             ),
 

@@ -26,7 +26,7 @@ duration: "~30s"
 <apps.ui_reflex:append_evidence_images locator="pil-image://workspace-assets/凶器-刀具-证物.jpeg" />
 <apps.ui_reflex:append_evidence_images locator="pil-image://workspace-assets/现场提取的指纹.jpeg" />
 
-这把刀。刀柄上有两枚完整的拇指指纹——你的右手拇指。法医意见：握刀姿态。
+这把刀。刀柄上有两枚完整的拇指指纹——你的右手拇指。
 
 <apps.ui_reflex:set_timer_state t="running:15"/>
 
