@@ -222,12 +222,11 @@ _POETRY_GRID_CSS = (
     box-shadow: 0 4px 24px var(--p-shadow);
     border: 1px solid var(--p-border);
     display: flex; flex-direction: column;
-    animation: cardSettle 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    animation: cardEnter 0.5s 0.1s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
-/* Calm frame fade-in — no bounce, so the eye stays on the media zooming in */
-@keyframes cardSettle {
-    from { opacity: 0; transform: scale(0.96); }
-    to   { opacity: 1; transform: scale(1); }
+@keyframes cardEnter {
+    from { opacity: 0; transform: translateY(30px) scale(0.7); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .poetry-card-media-wrap {
@@ -245,13 +244,6 @@ _POETRY_GRID_CSS = (
 .poetry-card-media {
     width: 100%; height: 100%;
     object-fit: cover; display: block;
-    /* Zoom down from overlay-scale into the slot — bridges overlay → card */
-    animation: mediaSettle 0.75s cubic-bezier(0.16, 0.84, 0.44, 1) both;
-}
-@keyframes mediaSettle {
-    0%   { opacity: 0; transform: scale(1.35); filter: blur(6px); }
-    55%  { opacity: 1; }
-    100% { opacity: 1; transform: scale(1); filter: blur(0); }
 }
 
 .poetry-card-text-wrap {
@@ -262,7 +254,7 @@ _POETRY_GRID_CSS = (
 .poetry-card-text {
     font-size: 22px; font-weight: 600; color: var(--p-text);
     letter-spacing: 0.06em; line-height: 1.4; text-align: center;
-    animation: inkReveal 0.8s 0.25s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    animation: inkReveal 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 @keyframes inkReveal {
     0%   { opacity: 0; filter: blur(3px); transform: translateY(14px); }
@@ -285,19 +277,39 @@ _POETRY_GRID_CSS = (
 .poetry-overlay-area {
     position: fixed; inset: 0; z-index: 50;
     pointer-events: none;
+    overflow: hidden;  /* clip off-screen overlay items during slide */
 }
 .poetry-overlay-item {
     position: absolute;
     top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
     max-width: 78vw; max-height: 72vh;
     border-radius: 14px; object-fit: contain;
     box-shadow: 0 8px 48px rgba(0,0,0,0.35);
-    animation: overlayEnter 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    /* Inactive: parked off-left, invisible. No transition — wake from this state
+       via .active (entrance animation) or .exiting (exit animation). */
+    opacity: 0;
+    transform: translate(-180%, -50%);
+    pointer-events: none;
 }
-@keyframes overlayEnter {
-    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+/* Enter: right → center with delay.  Keyframe animation — video loads unseen
+   during the 0.5s hold, then slides in. */
+.poetry-overlay-item.active {
+    pointer-events: auto;
+    animation: overlaySlideIn 0.45s 0.5s cubic-bezier(0.16, 0.84, 0.44, 1) both;
+}
+/* Exit: center → left, immediate.  Triggered by overlay_exiting state flag
+   (set by __setattr__ intercept of clear).  After animation ends,
+   element naturally stays at the parked position (opacity:0, -180%). */
+.poetry-overlay-item.exiting {
+    animation: overlaySlideOut 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes overlaySlideIn {
+    from { opacity: 0; transform: translate(100%, -50%); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+@keyframes overlaySlideOut {
+    from { opacity: 1; transform: translate(-50%, -50%); }
+    to   { opacity: 0; transform: translate(-180%, -50%); }
 }
 
 /* ═══════════════════════════════════════════ */
@@ -427,6 +439,41 @@ class PoetryGridState(rx.ComponentState, NameMixin):
     body: str = ""
     transition: str = ""
 
+    # Overlay exit animation state (cleared via on_animation_end after CSS exit plays)
+    overlay_exiting: str = ""
+    _ov_cache: str = ""            # cached active_overlay_video src during exit
+    _oi_cache: Image.Image | None = None  # cached active_overlay_image during exit
+
+    def __setattr__(self, name: str, value: object) -> None:
+        """Intercept clear_active_overlay_* to trigger CSS exit animation before wipe."""
+        if name == "active_overlay_video":
+            if value == "":
+                old = self.active_overlay_video
+                if old != "" and self.overlay_exiting != "1":
+                    super().__setattr__("_ov_cache", old)
+                    super().__setattr__("overlay_exiting", "1")
+            elif value != "":
+                # New overlay set → cancel any stale exit
+                super().__setattr__("overlay_exiting", "")
+                super().__setattr__("_ov_cache", "")
+        elif name == "active_overlay_image":
+            if value is None:
+                old = self.active_overlay_image
+                if old is not None and self.overlay_exiting != "1":
+                    super().__setattr__("_oi_cache", old)
+                    super().__setattr__("overlay_exiting", "1")
+            elif value is not None:
+                super().__setattr__("overlay_exiting", "")
+                super().__setattr__("_oi_cache", None)
+        super().__setattr__(name, value)
+
+    async def _on_overlay_exit_end(self):
+        """Called by on_animation_end — clear cache + exiting flag after CSS exit."""
+        if self.overlay_exiting:
+            self.overlay_exiting = ""
+            self._ov_cache = ""
+            self._oi_cache = None
+
     @classmethod
     def name(cls) -> str:
         return "poetry_grid"
@@ -548,24 +595,57 @@ class PoetryGridState(rx.ComponentState, NameMixin):
                 class_name="poetry-grid",
             ),
 
-            # ═══ PHASE 2b: Active overlay (center-screen, single item) ═══
+            # ═══ PHASE 2b: Active overlay (center-screen, always-mounted) ═══
+            # .poetry-overlay-item lives directly on img/video.
+            # On clear, __setattr__ intercept caches the last src → .exiting class
+            # → CSS exit animation (center→left).  Animation ends parked off-left.
             rx.box(
-                rx.cond(
-                    cls.active_overlay_image != None,
-                    rx.image(
-                        src=cls.active_overlay_image,
-                        class_name="poetry-overlay-item",
+                rx.image(
+                    src=rx.cond(
+                        cls.active_overlay_image != None,
+                        cls.active_overlay_image,
+                        rx.cond(
+                            cls.overlay_exiting != "",
+                            rx.cond(cls._oi_cache != None, cls._oi_cache, ""),
+                            "",
+                        ),
+                    ),
+                    class_name=rx.cond(
+                        (cls.active_overlay_image != None) & (cls.overlay_exiting == ""),
+                        "poetry-overlay-item active",
+                        rx.cond(
+                            cls.overlay_exiting != "",
+                            "poetry-overlay-item exiting",
+                            "poetry-overlay-item",
+                        ),
                     ),
                 ),
-                rx.cond(
-                    cls.active_overlay_video != "",
-                    rx.video(
-                        src=cls.active_overlay_video,
-                        playing=True,
-                        controls=False,
-                        muted=True,
-                        loop=True,
-                        class_name="poetry-overlay-item",
+                rx.video(
+                    src=rx.cond(
+                        cls.active_overlay_video != "",
+                        cls.active_overlay_video,
+                        rx.cond(
+                            cls.overlay_exiting != "",
+                            cls._ov_cache,
+                            "",
+                        ),
+                    ),
+                    playing=rx.cond(
+                        (cls.active_overlay_video != "") | (cls.overlay_exiting != ""),
+                        True,
+                        False,
+                    ),
+                    controls=False,
+                    muted=True,
+                    loop=True,
+                    class_name=rx.cond(
+                        (cls.active_overlay_video != "") & (cls.overlay_exiting == ""),
+                        "poetry-overlay-item active",
+                        rx.cond(
+                            cls.overlay_exiting != "",
+                            "poetry-overlay-item exiting",
+                            "poetry-overlay-item",
+                        ),
                     ),
                 ),
                 class_name="poetry-overlay-area",
